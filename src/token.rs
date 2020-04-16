@@ -1,11 +1,15 @@
-enum TokenType {
+#[derive(Debug)]
+pub enum TokenType {
     Newline,
     Tab,
     Space,
     Heading,
+    Hash,
+    Text,
 }
 
-struct Token {
+#[derive(Debug)]
+pub struct Token {
     id: TokenType,
     begin: usize,
     end: usize,
