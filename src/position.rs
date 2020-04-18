@@ -1,5 +1,4 @@
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Position {
     index: usize,
     line: usize,
@@ -28,6 +27,7 @@ impl Position {
 
     pub fn newline(&mut self) {
         self.line += 1;
+        self.line_offset = 0;
     }
 
     pub fn set_index(&mut self, index: usize) {

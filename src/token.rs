@@ -16,7 +16,7 @@ pub struct Token {
 }
 
 impl Token {
-    fn new(id: TokenType, begin: usize, end: usize) -> Token {
+    pub fn new(id: TokenType, begin: usize, end: usize) -> Token {
         Token {
             id,
             begin,
@@ -24,7 +24,7 @@ impl Token {
         }
     }
 
-    fn new_single(id: TokenType, begin: usize) -> Token {
+    pub fn new_single(id: TokenType, begin: usize) -> Token {
         Token {
             id,
             begin,
@@ -32,7 +32,7 @@ impl Token {
         }
     }
 
-    fn new_double(id: TokenType, begin: usize) -> Token {
+    pub fn new_double(id: TokenType, begin: usize) -> Token {
         Token {
             id,
             begin,
