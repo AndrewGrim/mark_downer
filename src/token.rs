@@ -7,6 +7,7 @@ pub enum TokenType {
     Hash,
     Text,
     Error,
+    Whitespace(char),
 }
 
 #[derive(Debug, PartialEq)]

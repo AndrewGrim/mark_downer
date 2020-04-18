@@ -26,34 +26,65 @@ fn read_markdown_file(file_path: String) -> Result<String, io::Error> {
 fn lex(text: String) -> Option<Vec<Token>> {
     let mut tokens: Vec<Token> = Vec::with_capacity(text.len());
     let mut iter = text.chars().enumerate().peekable();
+    let mut i: usize = 0;
     loop {
         match iter.next() {
-            Some(c) => match c.1 {
-                '#' => {
-                    let mut heading_count: usize = 1;
-                    while let Some(v) = iter.next() {
-                        match v.1 {
-                            '#' => {
-                                heading_count += 1;
+            Some(c) => {
+                i += 1;
+                match c.1 {
+                    '#' => {
+                        let mut heading_count: usize = 1;
+                        while let Some(v) = iter.next() {
+                            i += 1;
+                            match v.1 {
+                                '#' => {
+                                    heading_count += 1;
+                                },
+                                ' ' => {
+                                    if heading_count > 6 {
+                                        tokens.push(Token::new(TokenType::Error, c.0, c.0 + heading_count));
+                                    } else {
+                                        tokens.push(Token::new(TokenType::Heading, c.0, c.0 + heading_count));
+                                    }
+                                    tokens.push(Token::new_single(TokenType::Space, c.0 + heading_count));
+                                    break;
+                                },
+                                _ =>  {
+                                    loop  {
+                                        match iter.next() {
+                                            Some(v) => {
+                                                i += 1;
+                                                match v.1 {
+                                                    ' '|'\t'|'\n' => {
+                                                        tokens.push(Token::new(TokenType::Text, c.0, v.0));
+                                                        tokens.push(Token::new_single(TokenType::Whitespace(v.1), v.0));
+                                                        break;
+                                                    },
+                                                    _ => (),
+                                                }
+                                            },
+                                            None => {
+                                                println!("i: {}", i);
+                                                tokens.push(Token::new(TokenType::Text, c.0, i));
+                                                break;
+                                            },
+                                        }
+                                    }
+                                    break;
+                                },
                             }
-                            ' ' => {
-                                if heading_count > 6 {
-                                    tokens.push(Token::new(TokenType::Error, c.0, c.0 + heading_count));
-                                } else {
-                                    tokens.push(Token::new(TokenType::Heading, c.0, c.0 + heading_count));
-                                }
-                            },
-                            _ => break,
                         }
                     }
+                    _ => (),
                 }
-                _ => (),
             },
             None => break,
         }
     }
 
-    println!("tokens: {:?}", tokens);
+    for t in tokens.iter() {
+        println!("{:?}", t);
+    }
     Some(tokens)
 }
 
