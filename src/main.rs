@@ -18,7 +18,8 @@ fn main() {
         Err(e) => panic!("{}", e),
     };
 
-    lex(file).unwrap();
+    let tokens = lex(&file).unwrap();
+    parse(&file, &tokens);
 }
 
 fn read_markdown_file(file_path: String) -> Result<String, io::Error> {
@@ -27,7 +28,7 @@ fn read_markdown_file(file_path: String) -> Result<String, io::Error> {
     Ok(file)
 }
 
-fn lex(text: String) -> Option<Vec<Token>> {
+fn lex(text: &String) -> Option<Vec<Token>> {
     let mut tokens: Vec<Token> = Vec::with_capacity(text.len());
     let mut iter = text.chars().enumerate();
     let mut pos: Position = Position::new(0, 0, 0);
@@ -46,9 +47,9 @@ fn lex(text: String) -> Option<Vec<Token>> {
         }
     }
 
-    for t in tokens.iter() {
-        println!("{:?}", t);
-    }
+    // for t in tokens.iter() {
+    //     println!("{:?}", t);
+    // }
     Some(tokens)
 }
 
@@ -95,13 +96,36 @@ fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Enumerate<str::Chars>
     }
 }
 
+fn parse(file: &String, tokens: &Vec<Token>) {
+    let mut iter = tokens.iter().peekable();
+    while let Some(t) = iter.next() {
+        match t.id {
+            TokenType::Heading => {
+                let begin: usize = iter.next().unwrap().end;
+                let mut end: usize = begin;
+                while let Some(tok) = iter.peek() {
+                    match tok.id {
+                        TokenType::Text => {
+                            end = tok.end;
+                            iter.next();
+                        },
+                        _ => break,
+                    }
+                }
+                println!("<h{}>{}</h{}>", t.end - t.begin, file[begin..end - 1].to_string(), t.end - t.begin);
+            },
+            _ => (),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn heading_count() {
-        let t = lex(fs::read_to_string("test/heading.md").unwrap()).unwrap();
+        let t = lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap();
         let mut headings: usize = 0;
         for token in t.iter() {
             if token.id == TokenType::Heading {
@@ -114,21 +138,21 @@ mod tests {
     #[test]
     #[should_panic]
     fn heading_count_fail() {
-        assert!(lex(fs::read_to_string("test/heading.md").unwrap()).unwrap().len() == 1);
-        assert!(lex(fs::read_to_string("test/heading.md").unwrap()).unwrap().len() == 10);
+        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().len() == 1);
+        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().len() == 10);
     }
 
     #[test]
     fn heading_begin() {
-        assert!(lex(fs::read_to_string("test/heading.md").unwrap()).unwrap().get(0).unwrap().begin == 0);
-        assert!(lex(fs::read_to_string("test/heading.md").unwrap()).unwrap().get(2).unwrap().begin == 25);
-        assert!(lex(fs::read_to_string("test/heading.md").unwrap()).unwrap().get(5).unwrap().begin == 70);
+        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().get(0).unwrap().begin == 0);
+        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().get(2).unwrap().begin == 25);
+        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().get(5).unwrap().begin == 70);
     }
     
     #[test]
     fn heading_end() {
-        assert!(lex(fs::read_to_string("test/heading.md").unwrap()).unwrap().get(0).unwrap().end == 1);
-        assert!(lex(fs::read_to_string("test/heading.md").unwrap()).unwrap().get(2).unwrap().end == 28);
-        assert!(lex(fs::read_to_string("test/heading.md").unwrap()).unwrap().get(5).unwrap().end == 76);
+        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().get(0).unwrap().end == 1);
+        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().get(2).unwrap().end == 28);
+        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().get(5).unwrap().end == 76);
     }
 }
