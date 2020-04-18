@@ -222,35 +222,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn heading_count() {
+    fn heading() {
         let t = lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap();
         let mut headings: usize = 0;
+        let mut errors: usize = 0;
         for token in t.iter() {
-            if token.id == TokenType::Heading {
-                headings += 1;
-            } 
+            match token.id {
+                TokenType::Heading => {
+                    headings += 1;
+                },
+                TokenType::Error => {
+                    errors += 1;
+                },
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                _ => panic!("Encounter TokenType other than expected!"),
+            }
         }
         assert!(headings == 6);
-    }
-    
-    #[test]
-    #[should_panic]
-    fn heading_count_fail() {
-        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().len() == 1);
-        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().len() == 10);
-    }
-
-    #[test]
-    fn heading_begin() {
-        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().get(0).unwrap().begin == 0);
-        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().get(2).unwrap().begin == 25);
-        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().get(5).unwrap().begin == 70);
-    }
-    
-    #[test]
-    fn heading_end() {
-        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().get(0).unwrap().end == 1);
-        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().get(2).unwrap().end == 28);
-        assert!(lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap().get(5).unwrap().end == 76);
+        assert!(errors == 1);
     }
 }
