@@ -148,6 +148,10 @@ fn match_image(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable
                                                             tokens.push(Token::new(TokenType::ImageSrc, src_begin, v.0));
                                                             break;
                                                         },
+                                                        '\n' => {
+                                                            tokens.push(Token::new(TokenType::Error, c.0, v.0));
+                                                            break;
+                                                        },
                                                         _ => (),
                                                     }
                                                 }
@@ -159,6 +163,11 @@ fn match_image(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable
                                 }
                                 break;
                             },
+                            '\n' => {
+                                tokens.push(Token::new(TokenType::Text, c.0, v.0));
+                                tokens.push(Token::new_single(TokenType::Newline, v.0));
+                                break;
+                            },
                             _ => (),
                         }
                     }
@@ -166,7 +175,7 @@ fn match_image(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable
                 _ => tokens.push(Token::new_single(TokenType::Text, c.0)),
             }
         },
-        None => (),
+        None => tokens.push(Token::new_single(TokenType::Text, c.0)),
     }
 }
 
@@ -209,7 +218,7 @@ fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                 let t = iter.next().unwrap();
                 html.push(format!(" src=\"{}\">", text[t.begin..t.end].to_string()));
             },
-            TokenType::Error => html.push(format!("<span class=\"error\">ERROR: {}</span>", text[t.begin..t.end].to_string())),
+            TokenType::Error => html.push(format!("<div class=\"error\">ERROR: {}</div>\n", text[t.begin..t.end].to_string())),
             TokenType::Newline => html.push("<br>\n".to_string()),
             TokenType::Text => html.push(text[t.begin..t.end].to_string()),
             TokenType::Space => html.push(text[t.begin..t.end].to_string()),
@@ -271,5 +280,31 @@ mod tests {
             }
         }
         assert!(checkbuttons == 2);
+    }
+
+    #[test]
+    fn image() {
+        let t = lex(&fs::read_to_string("test/image.md").unwrap()).unwrap();
+        let mut image_alt: usize = 0;
+        let mut image_src: usize = 0;
+        let mut errors: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::ImageAlt => {
+                    image_alt += 1;
+                },
+                TokenType::ImageSrc => {
+                    image_src += 1;
+                },
+                TokenType::Error => {
+                    errors += 1;
+                },
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                _ => panic!("Encounterd TokenType other than expected!"),
+            }
+        }
+        assert!(image_alt == 2);
+        assert!(image_src == 2);
+        assert!(errors == 1);
     }
 }
