@@ -235,10 +235,31 @@ mod tests {
                     errors += 1;
                 },
                 TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
-                _ => panic!("Encounter TokenType other than expected!"),
+                _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
         assert!(headings == 6);
+        assert!(errors == 1);
+    }
+
+    #[test]
+    fn checkbutton() {
+        let t = lex(&fs::read_to_string("test/checkbutton.md").unwrap()).unwrap();
+        let mut checkbuttons: usize = 0;
+        let mut errors: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::Checkbutton(bool) => {
+                    checkbuttons += 1;
+                },
+                TokenType::Error => {
+                    errors += 1;
+                },
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                _ => panic!("Encounterd TokenType other than expected!"),
+            }
+        }
+        assert!(checkbuttons == 2);
         assert!(errors == 1);
     }
 }
