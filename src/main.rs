@@ -43,7 +43,8 @@ fn lex(text: &String) -> Option<Vec<Token>> {
                 match c.1 {
                     '#' => {
                         match_heading(&mut tokens, &mut iter, &mut pos, c);
-                    }
+                    },
+                    '\n' => tokens.push(Token::new_single(TokenType::Newline, c.0)),
                     _ => tokens.push(Token::new_single(TokenType::Text, c.0)),
                 }
             },
@@ -114,8 +115,9 @@ fn parse(file: &String, tokens: &Vec<Token>) -> Vec<String> {
                         _ => break,
                     }
                 }
-                html.push(format!("<h{}>{}</h{}>", t.end - t.begin, file[begin..end - 1].to_string(), t.end - t.begin));
+                html.push(format!("<h{}>{}</h{}>", t.end - t.begin, file[begin..end].to_string(), t.end - t.begin));
             },
+            TokenType::Newline => html.push("\n".to_string()),
             _ => (),
         }
     }
