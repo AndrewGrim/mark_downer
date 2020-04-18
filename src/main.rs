@@ -2,6 +2,7 @@
 
 use std::fs;
 use std::io;
+use std::io::Write;
 use std::iter;
 use std::str;
 
@@ -19,7 +20,8 @@ fn main() {
     };
 
     let tokens = lex(&file).unwrap();
-    parse(&file, &tokens);
+    let html = parse(&file, &tokens);
+    generate_html(String::from("generated_html/heading.html"), html);
 }
 
 fn read_markdown_file(file_path: String) -> Result<String, io::Error> {
@@ -96,7 +98,8 @@ fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Enumerate<str::Chars>
     }
 }
 
-fn parse(file: &String, tokens: &Vec<Token>) {
+fn parse(file: &String, tokens: &Vec<Token>) -> Vec<String> {
+    let mut html: Vec<String> = Vec::with_capacity(file.len());
     let mut iter = tokens.iter().peekable();
     while let Some(t) = iter.next() {
         match t.id {
@@ -112,10 +115,19 @@ fn parse(file: &String, tokens: &Vec<Token>) {
                         _ => break,
                     }
                 }
-                println!("<h{}>{}</h{}>", t.end - t.begin, file[begin..end - 1].to_string(), t.end - t.begin);
+                html.push(format!("<h{}>{}</h{}>", t.end - t.begin, file[begin..end - 1].to_string(), t.end - t.begin));
             },
             _ => (),
         }
+    }
+
+    html
+}
+
+fn generate_html(output_file: String, html: Vec<String>) {
+    let mut file = fs::File::create(output_file).unwrap();
+    for tag in html.iter() {
+        file.write(tag.as_bytes()).unwrap();
     }
 }
 
