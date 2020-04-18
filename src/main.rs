@@ -115,9 +115,16 @@ fn parse(file: &String, tokens: &Vec<Token>) -> Vec<String> {
                         _ => break,
                     }
                 }
-                html.push(format!("<h{}>{}</h{}>", t.end - t.begin, file[begin..end].to_string(), t.end - t.begin));
+                html.push(format!("<h{}>{}</h{}>\n", t.end - t.begin, file[begin..end].to_string(), t.end - t.begin));
+                if iter.peek().unwrap().id == TokenType::Newline {
+                    iter.next();
+                }
             },
-            TokenType::Newline => html.push("\n".to_string()),
+            TokenType::Error => html.push(format!("<span class=\"error\">ERROR: {}</span>", file[t.begin..t.end].to_string())),
+            TokenType::Newline => html.push("<br>\n".to_string()),
+            TokenType::Text => html.push(file[t.begin..t.end].to_string()),
+            TokenType::Space => html.push(file[t.begin..t.end].to_string()),
+            TokenType::Whitespace(char) => html.push(file[t.begin..t.end].to_string()),
             _ => (),
         }
     }
@@ -127,9 +134,12 @@ fn parse(file: &String, tokens: &Vec<Token>) -> Vec<String> {
 
 fn generate_html(output_file: String, html: Vec<String>) {
     let mut file = fs::File::create(output_file).unwrap();
+    file.write("<link rel=\"stylesheet\" href=\"default.css\">\n".as_bytes()).unwrap();
+    file.write("<div class=\"markdown-body\">\n".as_bytes()).unwrap();
     for tag in html.iter() {
         file.write(tag.as_bytes()).unwrap();
     }
+    file.write("\n</div>".as_bytes()).unwrap();
 }
 
 #[cfg(test)]
