@@ -41,7 +41,7 @@ fn lex(text: &String) -> Option<Vec<Token>> {
                         match_heading(&mut tokens, &mut iter, &mut pos, c);
                     },
                     '-' => {
-                        match_checkbutton(&mut tokens, &mut iter, &mut pos, c);
+                        match_checkbutton(text, &mut tokens, &mut iter, &mut pos, c);
                     },
                     '\n' => tokens.push(Token::new_single(TokenType::Newline, c.0)),
                     '\t' => tokens.push(Token::new_single(TokenType::Tab, c.0)),
@@ -99,60 +99,17 @@ fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumer
     }
 }
 
-// TODO refactor this monster
-fn match_checkbutton(tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
-    match iter.peek() {
+fn match_checkbutton(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+    match text.get(c.0 + 1..c.0 + 6) {
         Some(v) => {
-            if v.1 == ' ' {
-                iter.next();
-                pos.increment();
-                match iter.peek() {
-                    Some(v) => {
-                        if v.1 == '[' {
-                            iter.next();
-                            pos.increment();
-                            match iter.peek() {
-                                Some(v) => {
-                                    match v.1 {
-                                        ' '|'x'|'X' => {
-                                            let kind = v.1;
-                                            iter.next();
-                                            pos.increment();
-                                            match iter.peek() {
-                                                Some(v) => {
-                                                    if v.1 == ']' {
-                                                        if kind == ' ' {
-                                                            tokens.push(Token::new(TokenType::Checkbutton(false), c.0, v.0));
-                                                        } else {
-                                                            tokens.push(Token::new(TokenType::Checkbutton(true), c.0, v.0));
-                                                        }
-                                                        iter.next();
-                                                        pos.increment();
-                                                        match iter.peek() {
-                                                            Some(v) => if v.1 == ' ' {
-                                                                tokens.push(Token::new_single(TokenType::Space, pos.index));
-                                                            },
-                                                            None => (),
-                                                        }
-                                                    }
-                                                }
-                                                None => (),
-                                            }
-                                        },
-                                        ']' => {
-                                            tokens.push(Token::new(TokenType::Error, c.0, v.0 + 1));
-                                            iter.next();
-                                            pos.increment();
-                                        },
-                                        _ => tokens.push(Token::new(TokenType::Text, c.0, v.0)),
-                                    }
-                                },
-                                None => (),
-                            }
-                        }
-                    },
-                    None => (),
-                }
+            if v == " [ ] " {
+                tokens.push(Token::new(TokenType::Checkbutton(false), c.0, c.0 + 5));
+                iter.nth(3);
+            } else if v == " [x] " {
+                tokens.push(Token::new(TokenType::Checkbutton(true), c.0, c.0 + 5));
+                iter.nth(3);
+            } else {
+                tokens.push(Token::new_single(TokenType::Text, c.0));
             }
         },
         None => (),
@@ -192,7 +149,6 @@ fn parse(file: &String, tokens: &Vec<Token>) -> Vec<String> {
                 } else {
                     html.push(format!("<input type=\"checkbox\">"));
                 }
-                iter.next();
             },
             TokenType::Error => html.push(format!("<span class=\"error\">ERROR: {}</span>", file[t.begin..t.end].to_string())),
             TokenType::Newline => html.push("<br>\n".to_string()),
@@ -246,20 +202,15 @@ mod tests {
     fn checkbutton() {
         let t = lex(&fs::read_to_string("test/checkbutton.md").unwrap()).unwrap();
         let mut checkbuttons: usize = 0;
-        let mut errors: usize = 0;
         for token in t.iter() {
             match token.id {
                 TokenType::Checkbutton(bool) => {
                     checkbuttons += 1;
-                },
-                TokenType::Error => {
-                    errors += 1;
                 },
                 TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
         assert!(checkbuttons == 2);
-        assert!(errors == 1);
     }
 }
