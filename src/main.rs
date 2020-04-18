@@ -17,13 +17,14 @@ fn main() {
     let test_files = [
         "heading",
         "checkbutton",
-        ];
+        "image",
+    ];
     for test in test_files.iter() {
-        let file: String = fs::read_to_string(format!("test/{}.md", test)).unwrap();
-        let tokens = lex(&file).unwrap();
+        let text: String = fs::read_to_string(format!("test/{}.md", test)).unwrap();
+        let tokens = lex(&text).unwrap();
         let mut log = fs::File::create(format!("log/{}.log", test)).unwrap();
         log.write(format!("{:#?}", tokens).as_bytes()).unwrap();
-        let html = parse(&file, &tokens);
+        let html = parse(&text, &tokens);
         generate_html(format!("generated_html/{}.html", test), html);
     }
 }
@@ -42,6 +43,9 @@ fn lex(text: &String) -> Option<Vec<Token>> {
                     },
                     '-' => {
                         match_checkbutton(text, &mut tokens, &mut iter, &mut pos, c);
+                    },
+                    '!' => {
+                        match_image(text, &mut tokens, &mut iter, &mut pos, c);
                     },
                     '\n' => tokens.push(Token::new_single(TokenType::Newline, c.0)),
                     '\t' => tokens.push(Token::new_single(TokenType::Tab, c.0)),
@@ -104,20 +108,70 @@ fn match_checkbutton(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Pe
         Some(v) => {
             if v == " [ ] " {
                 tokens.push(Token::new(TokenType::Checkbutton(false), c.0, c.0 + 5));
+                pos.index += 3;
                 iter.nth(3);
             } else if v == " [x] " {
                 tokens.push(Token::new(TokenType::Checkbutton(true), c.0, c.0 + 5));
+                pos.index += 3;
                 iter.nth(3);
             } else {
                 tokens.push(Token::new_single(TokenType::Text, c.0));
+            }
+        },
+        None => tokens.push(Token::new_single(TokenType::Text, c.0)),
+    }
+}
+
+fn match_image(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+    match iter.peek() {
+        Some(v) => {
+            match v.1 {
+                '[' => {
+                    let alt_begin: usize = v.0 + 1;
+                    iter.next();
+                    pos.increment();
+                    while let Some(v) = iter.next() {
+                        pos.increment();
+                        match v.1 {
+                            ']' =>  {
+                                let alt_end: usize = v.0;
+                                match iter.peek() {
+                                    Some(v) => {
+                                        match v.1 {
+                                            '(' => {
+                                                let src_begin: usize = v.0 + 1;
+                                                while let Some(v) = iter.next() {
+                                                    pos.increment();
+                                                    match v.1 {
+                                                        ')' =>  {
+                                                            tokens.push(Token::new(TokenType::ImageAlt, alt_begin, alt_end));
+                                                            tokens.push(Token::new(TokenType::ImageSrc, src_begin, v.0));
+                                                            break;
+                                                        },
+                                                        _ => (),
+                                                    }
+                                                }
+                                            },
+                                            _ => (),
+                                        }
+                                    },
+                                    None => (),
+                                }
+                                break;
+                            },
+                            _ => (),
+                        }
+                    }
+                },
+                _ => tokens.push(Token::new_single(TokenType::Text, c.0)),
             }
         },
         None => (),
     }
 }
 
-fn parse(file: &String, tokens: &Vec<Token>) -> Vec<String> {
-    let mut html: Vec<String> = Vec::with_capacity(file.len());
+fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
+    let mut html: Vec<String> = Vec::with_capacity(text.len());
     let mut iter = tokens.iter().peekable();
     while let Some(t) = iter.next() {
         match t.id {
@@ -133,7 +187,7 @@ fn parse(file: &String, tokens: &Vec<Token>) -> Vec<String> {
                         _ => break,
                     }
                 }
-                html.push(format!("<h{}>{}</h{}>\n", t.end - t.begin, file[begin..end].to_string(), t.end - t.begin));
+                html.push(format!("<h{}>{}</h{}>\n", t.end - t.begin, text[begin..end].to_string(), t.end - t.begin));
                 match iter.peek() {
                     Some(n) => {
                         if n.id == TokenType::Newline {
@@ -150,12 +204,17 @@ fn parse(file: &String, tokens: &Vec<Token>) -> Vec<String> {
                     html.push(format!("<input type=\"checkbox\">"));
                 }
             },
-            TokenType::Error => html.push(format!("<span class=\"error\">ERROR: {}</span>", file[t.begin..t.end].to_string())),
+            TokenType::ImageAlt => {
+                html.push(format!("<img alt=\"{}\"", text[t.begin..t.end].to_string()));
+                let t = iter.next().unwrap();
+                html.push(format!(" src=\"{}\">", text[t.begin..t.end].to_string()));
+            },
+            TokenType::Error => html.push(format!("<span class=\"error\">ERROR: {}</span>", text[t.begin..t.end].to_string())),
             TokenType::Newline => html.push("<br>\n".to_string()),
-            TokenType::Text => html.push(file[t.begin..t.end].to_string()),
-            TokenType::Space => html.push(file[t.begin..t.end].to_string()),
-            TokenType::Tab => html.push(file[t.begin..t.end].to_string()),
-            TokenType::Whitespace(char) => html.push(file[t.begin..t.end].to_string()),
+            TokenType::Text => html.push(text[t.begin..t.end].to_string()),
+            TokenType::Space => html.push(text[t.begin..t.end].to_string()),
+            TokenType::Tab => html.push(text[t.begin..t.end].to_string()),
+            TokenType::Whitespace(char) => html.push(text[t.begin..t.end].to_string()),
             _ => (),
         }
     }

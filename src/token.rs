@@ -9,6 +9,8 @@ pub enum TokenType {
     Error,
     Whitespace(char),
     Checkbutton(bool),
+    ImageAlt,
+    ImageSrc,
 }
 
 #[derive(Debug, PartialEq)]
