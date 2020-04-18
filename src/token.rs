@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TokenType {
     Newline,
     Tab,
@@ -6,13 +6,14 @@ pub enum TokenType {
     Heading,
     Hash,
     Text,
+    Error,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Token {
-    id: TokenType,
-    begin: usize,
-    end: usize,
+    pub id: TokenType,
+    pub begin: usize,
+    pub end: usize,
 }
 
 impl Token {
