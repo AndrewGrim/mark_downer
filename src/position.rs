@@ -1,8 +1,8 @@
 #[derive(Debug, PartialEq)]
 pub struct Position {
-    index: usize,
-    line: usize,
-    line_offset: usize,
+    pub index: usize,
+    pub line: usize,
+    pub line_offset: usize,
 }
 
 impl Position {
