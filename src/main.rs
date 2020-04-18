@@ -14,22 +14,18 @@ use token::Token;
 use token::TokenType;
 
 fn main() {
-    let file: String = match read_markdown_file(String::from("test/heading.md")) {
-        Ok(v) => v,
-        Err(e) => panic!("{}", e),
-    };
-
-    let tokens = lex(&file).unwrap();
-    let mut log = fs::File::create("log/heading.log").unwrap();
-    log.write(format!("{:#?}", tokens).as_bytes()).unwrap();
-    let html = parse(&file, &tokens);
-    generate_html(String::from("generated_html/heading.html"), html);
-}
-
-fn read_markdown_file(file_path: String) -> Result<String, io::Error> {
-    let file: String = fs::read_to_string(file_path)?;
-
-    Ok(file)
+    let test_files = [
+        "heading",
+        "checkbutton",
+        ];
+    for test in test_files.iter() {
+        let file: String = fs::read_to_string(format!("test/{}.md", test)).unwrap();
+        let tokens = lex(&file).unwrap();
+        let mut log = fs::File::create(format!("log/{}.log", test)).unwrap();
+        log.write(format!("{:#?}", tokens).as_bytes()).unwrap();
+        let html = parse(&file, &tokens);
+        generate_html(format!("generated_html/{}.html", test), html);
+    }
 }
 
 fn lex(text: &String) -> Option<Vec<Token>> {
@@ -116,8 +112,13 @@ fn parse(file: &String, tokens: &Vec<Token>) -> Vec<String> {
                     }
                 }
                 html.push(format!("<h{}>{}</h{}>\n", t.end - t.begin, file[begin..end].to_string(), t.end - t.begin));
-                if iter.peek().unwrap().id == TokenType::Newline {
-                    iter.next();
+                match iter.peek() {
+                    Some(n) => {
+                        if n.id == TokenType::Newline {
+                            iter.next();
+                        }
+                    },
+                    None => (),
                 }
             },
             TokenType::Error => html.push(format!("<span class=\"error\">ERROR: {}</span>", file[t.begin..t.end].to_string())),
