@@ -30,7 +30,7 @@ fn main() {
 
 fn lex(text: &String) -> Option<Vec<Token>> {
     let mut tokens: Vec<Token> = Vec::with_capacity(text.len());
-    let mut iter = text.chars().enumerate();
+    let mut iter = text.chars().enumerate().peekable();
     let mut pos: Position = Position::new(0, 0, 0);
     loop {
         match iter.next() {
@@ -40,7 +40,12 @@ fn lex(text: &String) -> Option<Vec<Token>> {
                     '#' => {
                         match_heading(&mut tokens, &mut iter, &mut pos, c);
                     },
+                    '-' => {
+                        match_checkbutton(&mut tokens, &mut iter, &mut pos, c);
+                    },
                     '\n' => tokens.push(Token::new_single(TokenType::Newline, c.0)),
+                    '\t' => tokens.push(Token::new_single(TokenType::Tab, c.0)),
+                    ' ' => tokens.push(Token::new_single(TokenType::Space, c.0)),
                     _ => tokens.push(Token::new_single(TokenType::Text, c.0)),
                 }
             },
@@ -51,7 +56,7 @@ fn lex(text: &String) -> Option<Vec<Token>> {
     Some(tokens)
 }
 
-fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Enumerate<str::Chars>, pos: &mut Position, c: (usize, char)) {
+fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
     let mut heading_count: usize = 1;
     while let Some(v) = iter.next() {
         pos.increment();
@@ -94,6 +99,66 @@ fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Enumerate<str::Chars>
     }
 }
 
+// TODO refactor this monster
+fn match_checkbutton(tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+    match iter.peek() {
+        Some(v) => {
+            if v.1 == ' ' {
+                iter.next();
+                pos.increment();
+                match iter.peek() {
+                    Some(v) => {
+                        if v.1 == '[' {
+                            iter.next();
+                            pos.increment();
+                            match iter.peek() {
+                                Some(v) => {
+                                    match v.1 {
+                                        ' '|'x'|'X' => {
+                                            let kind = v.1;
+                                            iter.next();
+                                            pos.increment();
+                                            match iter.peek() {
+                                                Some(v) => {
+                                                    if v.1 == ']' {
+                                                        if kind == ' ' {
+                                                            tokens.push(Token::new(TokenType::Checkbutton(false), c.0, v.0));
+                                                        } else {
+                                                            tokens.push(Token::new(TokenType::Checkbutton(true), c.0, v.0));
+                                                        }
+                                                        iter.next();
+                                                        pos.increment();
+                                                        match iter.peek() {
+                                                            Some(v) => if v.1 == ' ' {
+                                                                tokens.push(Token::new_single(TokenType::Space, pos.index));
+                                                            },
+                                                            None => (),
+                                                        }
+                                                    }
+                                                }
+                                                None => (),
+                                            }
+                                        },
+                                        ']' => {
+                                            tokens.push(Token::new(TokenType::Error, c.0, v.0 + 1));
+                                            iter.next();
+                                            pos.increment();
+                                        },
+                                        _ => tokens.push(Token::new(TokenType::Text, c.0, v.0)),
+                                    }
+                                },
+                                None => (),
+                            }
+                        }
+                    },
+                    None => (),
+                }
+            }
+        },
+        None => (),
+    }
+}
+
 fn parse(file: &String, tokens: &Vec<Token>) -> Vec<String> {
     let mut html: Vec<String> = Vec::with_capacity(file.len());
     let mut iter = tokens.iter().peekable();
@@ -104,7 +169,7 @@ fn parse(file: &String, tokens: &Vec<Token>) -> Vec<String> {
                 let mut end: usize = begin;
                 while let Some(tok) = iter.peek() {
                     match tok.id {
-                        TokenType::Text => {
+                        TokenType::Text|TokenType::Space => {
                             end = tok.end;
                             iter.next();
                         },
@@ -121,10 +186,19 @@ fn parse(file: &String, tokens: &Vec<Token>) -> Vec<String> {
                     None => (),
                 }
             },
+            TokenType::Checkbutton(bool) => {
+                if t.id == TokenType::Checkbutton(true) {
+                    html.push(format!("<input type=\"checkbox\" checked>"));
+                } else {
+                    html.push(format!("<input type=\"checkbox\">"));
+                }
+                iter.next();
+            },
             TokenType::Error => html.push(format!("<span class=\"error\">ERROR: {}</span>", file[t.begin..t.end].to_string())),
             TokenType::Newline => html.push("<br>\n".to_string()),
             TokenType::Text => html.push(file[t.begin..t.end].to_string()),
             TokenType::Space => html.push(file[t.begin..t.end].to_string()),
+            TokenType::Tab => html.push(file[t.begin..t.end].to_string()),
             TokenType::Whitespace(char) => html.push(file[t.begin..t.end].to_string()),
             _ => (),
         }

@@ -8,6 +8,7 @@ pub enum TokenType {
     Text,
     Error,
     Whitespace(char),
+    Checkbutton(bool),
 }
 
 #[derive(Debug, PartialEq)]
