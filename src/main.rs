@@ -20,6 +20,8 @@ fn main() {
     };
 
     let tokens = lex(&file).unwrap();
+    let mut log = fs::File::create("log/heading.log").unwrap();
+    log.write(format!("{:#?}", tokens).as_bytes()).unwrap();
     let html = parse(&file, &tokens);
     generate_html(String::from("generated_html/heading.html"), html);
 }
@@ -49,9 +51,6 @@ fn lex(text: &String) -> Option<Vec<Token>> {
         }
     }
 
-    // for t in tokens.iter() {
-    //     println!("{:?}", t);
-    // }
     Some(tokens)
 }
 
