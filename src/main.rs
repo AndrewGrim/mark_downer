@@ -19,6 +19,7 @@ fn main() {
         "checkbutton",
         "image",
         "link",
+        "horizontalrule",
     ];
     for test in test_files.iter() {
         let text: String = fs::read_to_string(format!("test/{}.md", test)).unwrap();
@@ -43,7 +44,17 @@ fn lex(text: &String) -> Option<Vec<Token>> {
                         match_heading(&mut tokens, &mut iter, &mut pos, c);
                     },
                     '-' => {
-                        match_checkbutton(text, &mut tokens, &mut iter, &mut pos, c);
+                        match iter.peek() {
+                            Some(v) => {
+                                match v.1 {
+                                    '-' => match_horizontalrule(text, &mut tokens, &mut iter, &mut pos, c),
+                                    ' ' => match_checkbutton(text, &mut tokens, &mut iter, &mut pos, c),
+                                    _ => tokens.push(Token::new_single(TokenType::Text, c.0)),
+                                }
+                            },
+                            None => tokens.push(Token::new_single(TokenType::Text, c.0)),
+                        }
+                        
                     },
                     '!' => {
                         match_image(text, &mut tokens, &mut iter, &mut pos, c);
@@ -108,13 +119,13 @@ fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumer
 }
 
 fn match_checkbutton(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
-    match text.get(c.0 + 1..c.0 + 6) {
+    match text.get(c.0 + 2..c.0 + 6) {
         Some(v) => {
-            if v == " [ ] " {
+            if v == "[ ] " {
                 tokens.push(Token::new(TokenType::Checkbutton(false), c.0, c.0 + 5));
                 pos.index += 3;
                 iter.nth(3);
-            } else if v == " [x] " {
+            } else if v == "[x] " {
                 tokens.push(Token::new(TokenType::Checkbutton(true), c.0, c.0 + 5));
                 pos.index += 3;
                 iter.nth(3);
@@ -160,7 +171,7 @@ fn match_image(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable
                                                     }
                                                 }
                                             },
-                                            _ => (),
+                                            _ => tokens.push(Token::new(TokenType::Text, c.0, v.0)),
                                         }
                                     },
                                     None => (),
@@ -195,7 +206,7 @@ fn match_link(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<
                         match iter.peek() {
                             Some(v) => {
                                 match v.1 {
-                                    '(' => { // TODO image
+                                    '(' => {
                                         let href_begin: usize = v.0 + 1;
                                         while let Some(v) = iter.next() {
                                             pos.increment();
@@ -234,6 +245,25 @@ fn match_link(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<
             }
         }
     }
+}
+
+fn match_horizontalrule(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+    // match text.get(c.0 + 1..c.0 + 6) {
+    //     Some(v) => {
+    //         if v == " [ ] " { // TODO change since we dont need to check for the space
+    //             tokens.push(Token::new(TokenType::Checkbutton(false), c.0, c.0 + 5));
+    //             pos.index += 3;
+    //             iter.nth(3);
+    //         } else if v == " [x] " {
+    //             tokens.push(Token::new(TokenType::Checkbutton(true), c.0, c.0 + 5));
+    //             pos.index += 3;
+    //             iter.nth(3);
+    //         } else {
+    //             tokens.push(Token::new_single(TokenType::Text, c.0));
+    //         }
+    //     },
+    //     None => tokens.push(Token::new_single(TokenType::Text, c.0)),
+    // }
 }
 
 fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
