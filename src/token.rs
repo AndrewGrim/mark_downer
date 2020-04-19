@@ -16,6 +16,7 @@ pub enum TokenType {
     HorizontalRule,
     BlockquoteBegin,
     BlockquoteEnd,
+    Code,
 }
 
 #[derive(Debug, PartialEq)]

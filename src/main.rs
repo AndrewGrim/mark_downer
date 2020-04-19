@@ -21,6 +21,7 @@ fn main() {
         "link",
         "horizontalrule",
         "blockquote",
+        "code",
     ];
     for test in test_files.iter() {
         let text: String = fs::read_to_string(format!("test/{}.md", test)).unwrap();
@@ -65,6 +66,9 @@ fn lex(text: &String) -> Option<Vec<Token>> {
                     },
                     '>' => {
                         match_blockquote(text, &mut tokens, &mut iter, &mut pos, c);
+                    },
+                    '`' => {
+                        match_code(text, &mut tokens, &mut iter, &mut pos, c);
                     },
                     '\n' => tokens.push(Token::new_single(TokenType::Newline, c.0)),
                     '\t' => tokens.push(Token::new_single(TokenType::Tab, c.0)),
@@ -324,6 +328,27 @@ fn match_blockquote(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Pee
     }
 }
 
+fn match_code(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+    loop {
+        match iter.next() {
+            Some(v) => {
+                pos.increment();
+                match v.1 {
+                    '`' => {
+                        tokens.push(Token::new(TokenType::Code, c.0 + 1, v.0));
+                        break;
+                    },
+                    _ => (),
+                }
+            },
+            None => {
+                tokens.push(Token::new(TokenType::Code, c.0, pos.index));
+                break;
+            },
+        }
+    }
+}
+
 fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
     let mut html: Vec<String> = Vec::with_capacity(text.len());
     let mut iter = tokens.iter().peekable();
@@ -393,6 +418,7 @@ fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                 }
             },
             TokenType::HorizontalRule => html.push("<hr>\n".to_string()),
+            TokenType::Code => html.push(format!("<code>{}</code>", text[t.begin..t.end].to_string())),
             TokenType::Error => html.push(format!("<div class=\"error\">ERROR: {}</div>\n", text[t.begin..t.end].to_string())),
             TokenType::Newline => html.push("<br>\n".to_string()),
             TokenType::Text => html.push(text[t.begin..t.end].to_string()),
@@ -544,5 +570,21 @@ mod tests {
         }
         assert!(bb == 2);
         assert!(be == 2);
+    }
+
+    #[test]
+    fn code() {
+        let t = lex(&fs::read_to_string("test/code.md").unwrap()).unwrap();
+        let mut code: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::Code => {
+                    code += 1;
+                },
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                _ => panic!("Encounterd TokenType other than expected!"),
+            }
+        }
+        assert!(code == 3);
     }
 }
