@@ -14,6 +14,8 @@ pub enum TokenType {
     LinkText,
     LinkHref,
     HorizontalRule,
+    BlockquoteBegin,
+    BlockquoteEnd,
 }
 
 #[derive(Debug, PartialEq)]

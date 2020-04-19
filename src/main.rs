@@ -20,6 +20,7 @@ fn main() {
         "image",
         "link",
         "horizontalrule",
+        "blockquote",
     ];
     for test in test_files.iter() {
         let text: String = fs::read_to_string(format!("test/{}.md", test)).unwrap();
@@ -61,6 +62,9 @@ fn lex(text: &String) -> Option<Vec<Token>> {
                     },
                     '[' => {
                         match_link(text, &mut tokens, &mut iter, &mut pos, c);
+                    },
+                    '>' => {
+                        match_blockquote(text, &mut tokens, &mut iter, &mut pos, c);
                     },
                     '\n' => tokens.push(Token::new_single(TokenType::Newline, c.0)),
                     '\t' => tokens.push(Token::new_single(TokenType::Tab, c.0)),
@@ -259,9 +263,7 @@ fn match_horizontalrule(text: &String, tokens: &mut Vec<Token>, iter: &mut iter:
                         Some(v) => {
                             match v.1 {
                                 '\n' => {
-                                    if c.0 == 0 {
-                                        tokens.push(Token::new(TokenType::HorizontalRule, c.0, v.0 + 1));
-                                    } else if &text[c.0 - 1..c.0] == "\n" {
+                                    if c.0 == 0 || &text[c.0 - 1..c.0] == "\n" {
                                         tokens.push(Token::new(TokenType::HorizontalRule, c.0, v.0 + 1));
                                     } else {
                                         tokens.push(Token::new(TokenType::Text, c.0, v.0));
@@ -280,6 +282,45 @@ fn match_horizontalrule(text: &String, tokens: &mut Vec<Token>, iter: &mut iter:
             }
         },
         None => tokens.push(Token::new_double(TokenType::Text, c.0)),
+    }
+}
+
+fn match_blockquote(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+    if c.0 == 0 || &text[c.0 - 1..c.0] == "\n" {
+        tokens.push(Token::new_single(TokenType::BlockquoteBegin, c.0));
+        loop {
+            match iter.next() {
+                Some(v) => {
+                    pos.increment();
+                    match v.1 {
+                        '\n' => {
+                            match iter.peek() {
+                                Some(v) => {
+                                    match v.1 {
+                                        '\n' => {
+                                            tokens.push(Token::new(TokenType::BlockquoteEnd, c.0, pos.index));
+                                            tokens.push(Token::new_single(TokenType::Newline, v.0));
+                                            break;
+                                        },
+                                        _ => tokens.push(Token::new_single(TokenType::Text, v.0)),
+                                    }
+                                    iter.next();
+                                    pos.increment();
+                                },
+                                None => tokens.push(Token::new(TokenType::BlockquoteEnd, c.0, pos.index)),
+                            }
+                        },
+                        _ => tokens.push(Token::new_single(TokenType::Text, v.0)),
+                    }
+                },
+                None => {
+                    tokens.push(Token::new(TokenType::BlockquoteEnd, c.0, pos.index));
+                    break;
+                },
+            }
+        }
+    } else  {
+        tokens.push(Token::new_single(TokenType::Text, c.0));
     }
 }
 
@@ -329,6 +370,26 @@ fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                     html.push(format!("{}</a>", text[t.begin..t.end].to_string()));
                 } else {
                     html.push(format!("{}</a>", text[tok.begin..tok.end].to_string()));
+                }
+            },
+            TokenType::BlockquoteBegin => {
+                while let Some(tok) = iter.peek() {
+                    match tok.id {
+                        TokenType::Text => {iter.next();},
+                        TokenType::BlockquoteEnd => {
+                            html.push(format!("<blockquote>{}</blockquote>", text[tok.begin + 1..tok.end - 1].to_string()));
+                            iter.next();
+                        },
+                        _ => break,
+                    }
+                }
+                match iter.peek() {
+                    Some(n) => {
+                        if n.id == TokenType::Newline {
+                            iter.next();
+                        }
+                    },
+                    None => (),
                 }
             },
             TokenType::HorizontalRule => html.push("<hr>\n".to_string()),
@@ -462,5 +523,26 @@ mod tests {
             }
         }
         assert!(hr == 1);
+    }
+
+    #[test]
+    fn blockqoute() {
+        let t = lex(&fs::read_to_string("test/blockquote.md").unwrap()).unwrap();
+        let mut bb: usize = 0;
+        let mut be: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::BlockquoteBegin => {
+                    bb += 1;
+                },
+                TokenType::BlockquoteEnd => {
+                    be += 1;
+                },
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                _ => panic!("Encounterd TokenType other than expected!"),
+            }
+        }
+        assert!(bb == 2);
+        assert!(be == 2);
     }
 }
