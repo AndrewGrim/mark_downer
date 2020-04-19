@@ -4,6 +4,10 @@ version = "0.1.0"
 authors = ["AndrewGrim <39337035+AndrewGrim@users.noreply.github.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "markdowner"
+path = "src/lib.rs"
 
-[dependencies]
+[[bin]]
+name = "md"
+path = "src/bin.rs"
