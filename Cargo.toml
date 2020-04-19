@@ -10,4 +10,4 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "md"
-path = "src/bin.rs"
+path = "src/bin/md.rs"
