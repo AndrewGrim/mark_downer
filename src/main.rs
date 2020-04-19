@@ -18,6 +18,7 @@ fn main() {
         "heading",
         "checkbutton",
         "image",
+        "link",
     ];
     for test in test_files.iter() {
         let text: String = fs::read_to_string(format!("test/{}.md", test)).unwrap();
@@ -46,6 +47,9 @@ fn lex(text: &String) -> Option<Vec<Token>> {
                     },
                     '!' => {
                         match_image(text, &mut tokens, &mut iter, &mut pos, c);
+                    },
+                    '[' => {
+                        match_link(text, &mut tokens, &mut iter, &mut pos, c);
                     },
                     '\n' => tokens.push(Token::new_single(TokenType::Newline, c.0)),
                     '\t' => tokens.push(Token::new_single(TokenType::Tab, c.0)),
@@ -179,6 +183,59 @@ fn match_image(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable
     }
 }
 
+fn match_link(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+    let text_begin: usize = c.0 + 1;
+    loop {
+        match iter.next() {
+            Some(v) => {
+                pos.increment();
+                match v.1 {
+                    ']' =>  {
+                        let text_end: usize = v.0;
+                        match iter.peek() {
+                            Some(v) => {
+                                match v.1 {
+                                    '(' => { // TODO image
+                                        let href_begin: usize = v.0 + 1;
+                                        while let Some(v) = iter.next() {
+                                            pos.increment();
+                                            match v.1 {
+                                                ')' =>  {
+                                                    tokens.push(Token::new(TokenType::LinkHref, href_begin, v.0));
+                                                    tokens.push(Token::new(TokenType::LinkText, text_begin, text_end));
+                                                    break;
+                                                },
+                                                '\n' => {
+                                                    tokens.push(Token::new(TokenType::Error, c.0, v.0));
+                                                    break;
+                                                },
+                                                _ => (),
+                                            }
+                                        }
+                                    },
+                                    _ => tokens.push(Token::new(TokenType::Text, c.0, v.0)),
+                                }
+                            },
+                            None => (),
+                        }
+                        break;
+                    },
+                    '\n' => {
+                        tokens.push(Token::new(TokenType::Text, c.0, v.0));
+                        tokens.push(Token::new_single(TokenType::Newline, v.0));
+                        break;
+                    },
+                    _ => (),
+                }
+            },
+            None => {
+                tokens.push(Token::new_single(TokenType::Text, c.0));
+                break;
+            }
+        }
+    }
+}
+
 fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
     let mut html: Vec<String> = Vec::with_capacity(text.len());
     let mut iter = tokens.iter().peekable();
@@ -217,6 +274,15 @@ fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                 html.push(format!("<img alt=\"{}\"", text[t.begin..t.end].to_string()));
                 let t = iter.next().unwrap();
                 html.push(format!(" src=\"{}\">", text[t.begin..t.end].to_string()));
+            },
+            TokenType::LinkHref => {
+                html.push(format!("<a href=\"{}\">", text[t.begin..t.end].to_string()));
+                let tok = iter.next().unwrap();
+                if text[tok.begin..tok.end].len() == 0 {
+                    html.push(format!("{}</a>", text[t.begin..t.end].to_string()));
+                } else {
+                    html.push(format!("{}</a>", text[tok.begin..tok.end].to_string()));
+                }
             },
             TokenType::Error => html.push(format!("<div class=\"error\">ERROR: {}</div>\n", text[t.begin..t.end].to_string())),
             TokenType::Newline => html.push("<br>\n".to_string()),
@@ -305,6 +371,32 @@ mod tests {
         }
         assert!(image_alt == 2);
         assert!(image_src == 2);
+        assert!(errors == 1);
+    }
+
+    #[test]
+    fn link() {
+        let t = lex(&fs::read_to_string("test/link.md").unwrap()).unwrap();
+        let mut link_text: usize = 0;
+        let mut link_href: usize = 0;
+        let mut errors: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::LinkText => {
+                    link_text += 1;
+                },
+                TokenType::LinkHref => {
+                    link_href += 1;
+                },
+                TokenType::Error => {
+                    errors += 1;
+                },
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                _ => panic!("Encounterd TokenType other than expected!"),
+            }
+        }
+        assert!(link_text == 2);
+        assert!(link_href == 2);
         assert!(errors == 1);
     }
 }

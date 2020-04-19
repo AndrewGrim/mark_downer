@@ -11,6 +11,8 @@ pub enum TokenType {
     Checkbutton(bool),
     ImageAlt,
     ImageSrc,
+    LinkText,
+    LinkHref,
 }
 
 #[derive(Debug, PartialEq)]
