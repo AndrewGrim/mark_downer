@@ -248,22 +248,39 @@ fn match_link(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<
 }
 
 fn match_horizontalrule(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
-    // match text.get(c.0 + 1..c.0 + 6) {
-    //     Some(v) => {
-    //         if v == " [ ] " { // TODO change since we dont need to check for the space
-    //             tokens.push(Token::new(TokenType::Checkbutton(false), c.0, c.0 + 5));
-    //             pos.index += 3;
-    //             iter.nth(3);
-    //         } else if v == " [x] " {
-    //             tokens.push(Token::new(TokenType::Checkbutton(true), c.0, c.0 + 5));
-    //             pos.index += 3;
-    //             iter.nth(3);
-    //         } else {
-    //             tokens.push(Token::new_single(TokenType::Text, c.0));
-    //         }
-    //     },
-    //     None => tokens.push(Token::new_single(TokenType::Text, c.0)),
-    // }
+    iter.next();
+    pos.increment();
+    match iter.next() {
+        Some(v) => {
+            pos.increment();
+            match v.1 {
+                '-' => {
+                    match iter.peek() {
+                        Some(v) => {
+                            match v.1 {
+                                '\n' => {
+                                    if c.0 == 0 {
+                                        tokens.push(Token::new(TokenType::HorizontalRule, c.0, v.0 + 1));
+                                    } else if &text[c.0 - 1..c.0] == "\n" {
+                                        tokens.push(Token::new(TokenType::HorizontalRule, c.0, v.0 + 1));
+                                    } else {
+                                        tokens.push(Token::new(TokenType::Text, c.0, v.0));
+                                        tokens.push(Token::new_single(TokenType::Newline, v.0));
+                                    }
+                                },
+                                _ => tokens.push(Token::new(TokenType::Text, c.0, v.0 + 1)),
+                            }
+                            iter.next();
+                            pos.increment();
+                        },
+                        None => tokens.push(Token::new(TokenType::Text, c.0, v.0)),
+                    }
+                },
+                _ => tokens.push(Token::new(TokenType::Text, c.0, v.0 + 1)),
+            }
+        },
+        None => tokens.push(Token::new_double(TokenType::Text, c.0)),
+    }
 }
 
 fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
@@ -314,6 +331,7 @@ fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                     html.push(format!("{}</a>", text[tok.begin..tok.end].to_string()));
                 }
             },
+            TokenType::HorizontalRule => html.push("<hr>\n".to_string()),
             TokenType::Error => html.push(format!("<div class=\"error\">ERROR: {}</div>\n", text[t.begin..t.end].to_string())),
             TokenType::Newline => html.push("<br>\n".to_string()),
             TokenType::Text => html.push(text[t.begin..t.end].to_string()),
@@ -428,5 +446,21 @@ mod tests {
         assert!(link_text == 2);
         assert!(link_href == 2);
         assert!(errors == 1);
+    }
+
+    #[test]
+    fn horizontalrule() {
+        let t = lex(&fs::read_to_string("test/horizontalrule.md").unwrap()).unwrap();
+        let mut hr: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::HorizontalRule => {
+                    hr += 1;
+                },
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                _ => panic!("Encounterd TokenType other than expected!"),
+            }
+        }
+        assert!(hr == 1);
     }
 }

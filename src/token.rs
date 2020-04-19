@@ -13,6 +13,7 @@ pub enum TokenType {
     ImageSrc,
     LinkText,
     LinkHref,
+    HorizontalRule,
 }
 
 #[derive(Debug, PartialEq)]
