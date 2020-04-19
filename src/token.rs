@@ -17,6 +17,9 @@ pub enum TokenType {
     BlockquoteBegin,
     BlockquoteEnd,
     Code,
+    CodeBlockBegin,
+    CodeBlockEnd,
+    CodeBlockLanguage,
 }
 
 #[derive(Debug, PartialEq)]

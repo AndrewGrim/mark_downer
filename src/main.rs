@@ -5,6 +5,7 @@ use std::io;
 use std::io::Write;
 use std::iter;
 use std::str;
+use std::option;
 
 mod position;
 use position::Position;
@@ -22,6 +23,7 @@ fn main() {
         "horizontalrule",
         "blockquote",
         "code",
+        "codeblock",
     ];
     for test in test_files.iter() {
         let text: String = fs::read_to_string(format!("test/{}.md", test)).unwrap();
@@ -56,7 +58,6 @@ fn lex(text: &String) -> Option<Vec<Token>> {
                             },
                             None => tokens.push(Token::new_single(TokenType::Text, c.0)),
                         }
-                        
                     },
                     '!' => {
                         match_image(text, &mut tokens, &mut iter, &mut pos, c);
@@ -68,7 +69,15 @@ fn lex(text: &String) -> Option<Vec<Token>> {
                         match_blockquote(text, &mut tokens, &mut iter, &mut pos, c);
                     },
                     '`' => {
-                        match_code(text, &mut tokens, &mut iter, &mut pos, c);
+                        match iter.peek() {
+                            Some(v) => {
+                                match v.1 {
+                                    '`' => match_codeblock(text, &mut tokens, &mut iter, &mut pos, c),
+                                    _ => match_code(text, &mut tokens, &mut iter, &mut pos, c),
+                                }
+                            },
+                            None => tokens.push(Token::new_single(TokenType::Text, c.0)),
+                        }
                     },
                     '\n' => tokens.push(Token::new_single(TokenType::Newline, c.0)),
                     '\t' => tokens.push(Token::new_single(TokenType::Tab, c.0)),
@@ -329,23 +338,112 @@ fn match_blockquote(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Pee
 }
 
 fn match_code(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
-    loop {
-        match iter.next() {
+    if c.0 == 0 || &text[c.0 - 1..c.0] != "`" {
+        loop {
+            match iter.next() {
+                Some(v) => {
+                    pos.increment();
+                    match v.1 {
+                        '`' => {
+                            tokens.push(Token::new(TokenType::Code, c.0 + 1, v.0));
+                            break;
+                        },
+                        _ => (),
+                    }
+                },
+                None => {
+                    tokens.push(Token::new(TokenType::Text, c.0, pos.index));
+                    break;
+                },
+            }
+        }
+    } else {
+        tokens.push(Token::new_single(TokenType::Text, c.0));
+    }
+}
+
+fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+    if c.0 == 0 || &text[c.0 - 1..c.0] == "\n" {
+        iter.next();
+        pos.increment();
+        match iter.peek() {
             Some(v) => {
+                let v = iter.next().unwrap();
                 pos.increment();
                 match v.1 {
-                    '`' => {
-                        tokens.push(Token::new(TokenType::Code, c.0 + 1, v.0));
-                        break;
+                    '`' =>{
+                        tokens.push(Token::new(TokenType::CodeBlockBegin, c.0, pos.index));
+                        let lang_begin: usize = pos.index;
+                        loop {
+                            match iter.next() {
+                                Some(v) => {
+                                    pos.increment();
+                                    match v.1 {
+                                        '\n' => {
+                                            tokens.push(Token::new(TokenType::CodeBlockLanguage, lang_begin, pos.index));
+                                            break;
+                                        },
+                                        _ => (),
+                                    }
+                                },
+                                None => break,
+                            }
+                        }
+                        let lang_end: usize = pos.index;
+                        loop {
+                            match iter.next() {
+                                Some(v) => {
+                                    pos.increment();
+                                    match v.1 {
+                                        '`' => {
+                                            match iter.next() {
+                                                Some(v) => {
+                                                    pos.increment();
+                                                    match v.1 {
+                                                        '`' => {
+                                                            match iter.next() {
+                                                                Some(v) => {
+                                                                    pos.increment();
+                                                                    match v.1 {
+                                                                        '`' => {
+                                                                            tokens.push(Token::new(TokenType::CodeBlockEnd, lang_end, v.0));
+                                                                            break;
+                                                                        },
+                                                                        _ => (),
+                                                                    }
+                                                                },
+                                                                None => {
+                                                                    tokens.push(Token::new(TokenType::Text, c.0, pos.index));
+                                                                    break;
+                                                                },
+                                                            }
+                                                        },
+                                                        _ => (),
+                                                    }
+                                                },
+                                                None => {
+                                                    tokens.push(Token::new(TokenType::Text, c.0, pos.index));
+                                                    break;
+                                                },
+                                            }
+                                        },
+                                        _ => (),
+                                    }
+                                },
+                                None => {
+                                    tokens.push(Token::new(TokenType::Text, c.0, pos.index));
+                                    break;
+                                },
+                            }
+                        }
                     },
-                    _ => (),
+                    _ => tokens.push(Token::new(TokenType::Text, c.0, v.0)),
                 }
             },
-            None => {
-                tokens.push(Token::new(TokenType::Code, c.0, pos.index));
-                break;
-            },
+            None => tokens.push(Token::new(TokenType::Text, c.0, pos.index)),
         }
+    } else {
+        tokens.push(Token::new_single(TokenType::Text, c.0));
     }
 }
 
@@ -408,6 +506,39 @@ fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                         _ => break,
                     }
                 }
+                match iter.peek() {
+                    Some(n) => {
+                        if n.id == TokenType::Newline {
+                            iter.next();
+                        }
+                    },
+                    None => (),
+                }
+            },
+            TokenType::CodeBlockBegin => {
+                let lang_iter = match iter.peek() {
+                    Some(n) => match n.id {
+                            TokenType::CodeBlockLanguage => iter.next().unwrap(),
+                            _ => continue,
+                        },
+                    None => break,
+                };
+                let mut lang = String::new();
+                if lang_iter.end - lang_iter.begin == 1 {
+                    lang += "base";
+                } else {
+                    lang = text[lang_iter.begin..lang_iter.end - 1].to_string();
+                }
+
+                let block = match iter.peek() {
+                    Some(n) => match n.id {
+                        TokenType::CodeBlockEnd => iter.next().unwrap(),
+                        _ => continue,
+                    },
+                    None => break,
+                };
+                html.push(format!("<pre class=\"language-{}\">{}</pre>",
+                        lang, text[block.begin..block.end - 2].to_string()));
                 match iter.peek() {
                     Some(n) => {
                         if n.id == TokenType::Newline {
@@ -585,6 +716,32 @@ mod tests {
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
-        assert!(code == 3);
+        assert!(code == 2);
+    }
+
+    #[test]
+    fn codeblock() {
+        let t = lex(&fs::read_to_string("test/codeblock.md").unwrap()).unwrap();
+        let mut cbb: usize = 0;
+        let mut cbe: usize = 0;
+        let mut cbl: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::CodeBlockBegin => {
+                    cbb += 1;
+                },
+                TokenType::CodeBlockEnd => {
+                    cbe += 1;
+                },
+                TokenType::CodeBlockLanguage => {
+                    cbl += 1;
+                },
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                _ => panic!("Encounterd TokenType other than expected!"),
+            }
+        }
+        assert!(cbb == 3);
+        assert!(cbe == 2);
+        assert!(cbl == 2);
     }
 }
