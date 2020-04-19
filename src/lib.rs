@@ -11,31 +11,19 @@ mod position;
 use position::Position;
 
 mod token;
-use token::Token;
-use token::TokenType;
+pub use token::Token;
+pub use token::TokenType;
 
-fn main() {
-    let test_files = [
-        "heading",
-        "checkbutton",
-        "image",
-        "link",
-        "horizontalrule",
-        "blockquote",
-        "code",
-        "codeblock",
-    ];
-    for test in test_files.iter() {
-        let text: String = fs::read_to_string(format!("test/{}.md", test)).unwrap();
-        let tokens = lex(&text).unwrap();
-        let mut log = fs::File::create(format!("log/{}.log", test)).unwrap();
-        log.write(format!("{:#?}", tokens).as_bytes()).unwrap();
-        let html = parse(&text, &tokens);
-        generate_html(format!("generated_html/{}.html", test), html);
-    }
+pub fn markdown_to_html(input: &str, output: &str) -> Result<Vec<Token>, io::Error> {
+    let text: String = fs::read_to_string(input)?;
+    let tokens = lex(&text);
+    let html = parse(&text, &tokens);
+    generate_html(output.to_string(), html);
+
+    Ok(tokens)
 }
 
-fn lex(text: &String) -> Option<Vec<Token>> {
+fn lex(text: &String) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::with_capacity(text.len());
     let mut iter = text.chars().enumerate().peekable();
     let mut pos: Position = Position::new(0, 0, 0);
@@ -89,7 +77,7 @@ fn lex(text: &String) -> Option<Vec<Token>> {
         }
     }
 
-    Some(tokens)
+    tokens
 }
 
 fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
@@ -578,8 +566,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn heading() {
-        let t = lex(&fs::read_to_string("test/heading.md").unwrap()).unwrap();
+    fn heading() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/heading.md")?);
         let mut headings: usize = 0;
         let mut errors: usize = 0;
         for token in t.iter() {
@@ -596,11 +584,13 @@ mod tests {
         }
         assert!(headings == 6);
         assert!(errors == 1);
+
+        Ok(())
     }
 
     #[test]
-    fn checkbutton() {
-        let t = lex(&fs::read_to_string("test/checkbutton.md").unwrap()).unwrap();
+    fn checkbutton() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/checkbutton.md")?);
         let mut checkbuttons: usize = 0;
         for token in t.iter() {
             match token.id {
@@ -612,11 +602,13 @@ mod tests {
             }
         }
         assert!(checkbuttons == 2);
+
+        Ok(())
     }
 
     #[test]
-    fn image() {
-        let t = lex(&fs::read_to_string("test/image.md").unwrap()).unwrap();
+    fn image() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/image.md")?);
         let mut image_alt: usize = 0;
         let mut image_src: usize = 0;
         let mut errors: usize = 0;
@@ -638,11 +630,13 @@ mod tests {
         assert!(image_alt == 2);
         assert!(image_src == 2);
         assert!(errors == 1);
+
+        Ok(())
     }
 
     #[test]
-    fn link() {
-        let t = lex(&fs::read_to_string("test/link.md").unwrap()).unwrap();
+    fn link() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/link.md")?);
         let mut link_text: usize = 0;
         let mut link_href: usize = 0;
         let mut errors: usize = 0;
@@ -664,11 +658,13 @@ mod tests {
         assert!(link_text == 2);
         assert!(link_href == 2);
         assert!(errors == 1);
+
+        Ok(())
     }
 
     #[test]
-    fn horizontalrule() {
-        let t = lex(&fs::read_to_string("test/horizontalrule.md").unwrap()).unwrap();
+    fn horizontalrule() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/horizontalrule.md")?);
         let mut hr: usize = 0;
         for token in t.iter() {
             match token.id {
@@ -680,11 +676,13 @@ mod tests {
             }
         }
         assert!(hr == 1);
+
+        Ok(())
     }
 
     #[test]
-    fn blockqoute() {
-        let t = lex(&fs::read_to_string("test/blockquote.md").unwrap()).unwrap();
+    fn blockqoute() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/blockquote.md")?);
         let mut bb: usize = 0;
         let mut be: usize = 0;
         for token in t.iter() {
@@ -701,11 +699,13 @@ mod tests {
         }
         assert!(bb == 2);
         assert!(be == 2);
+
+        Ok(())
     }
 
     #[test]
-    fn code() {
-        let t = lex(&fs::read_to_string("test/code.md").unwrap()).unwrap();
+    fn code() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/code.md")?);
         let mut code: usize = 0;
         for token in t.iter() {
             match token.id {
@@ -717,11 +717,13 @@ mod tests {
             }
         }
         assert!(code == 2);
+
+        Ok(())
     }
 
     #[test]
-    fn codeblock() {
-        let t = lex(&fs::read_to_string("test/codeblock.md").unwrap()).unwrap();
+    fn codeblock() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/codeblock.md")?);
         let mut cbb: usize = 0;
         let mut cbe: usize = 0;
         let mut cbl: usize = 0;
@@ -743,5 +745,7 @@ mod tests {
         assert!(cbb == 3);
         assert!(cbe == 2);
         assert!(cbl == 2);
+
+        Ok(())
     }
 }
