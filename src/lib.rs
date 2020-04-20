@@ -980,4 +980,17 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn html() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/html.md")?);
+        for token in t.iter() {
+            match token.id {
+                TokenType::Text|TokenType::Space|TokenType::Newline => (),
+                _ => panic!("Encounterd TokenType other than expected!"),
+            }
+        }
+
+        Ok(())
+    }
 }
