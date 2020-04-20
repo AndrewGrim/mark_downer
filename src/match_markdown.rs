@@ -1,9 +1,5 @@
-use std::fs;
-use std::io;
-use std::io::Write;
 use std::iter;
 use std::str;
-use std::option;
 
 use crate::position::Position;
 use crate::token::Token;
