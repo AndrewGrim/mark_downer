@@ -67,9 +67,17 @@ fn lex(text: &String) -> Vec<Token> {
                             None => tokens.push(Token::new_single(TokenType::Text, c.0)),
                         }
                     },
+                    ' ' => match iter.peek() {
+                        Some(v) => {
+                            match v.1 {
+                                ' ' => match_indentblock(text, &mut tokens, &mut iter, &mut pos, c),
+                                _ => tokens.push(Token::new_single(TokenType::Space, c.0)),
+                            }
+                        },
+                        None => tokens.push(Token::new_single(TokenType::Space, c.0)),
+                    },
                     '\n' => tokens.push(Token::new_single(TokenType::Newline, c.0)),
                     '\t' => tokens.push(Token::new_single(TokenType::Tab, c.0)),
-                    ' ' => tokens.push(Token::new_single(TokenType::Space, c.0)),
                     _ => tokens.push(Token::new_single(TokenType::Text, c.0)),
                 }
             },
@@ -98,6 +106,10 @@ fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumer
                 break;
             },
             _ =>  {
+                // TODO The loop below is likely unnecessary
+                // instead if we hit anything else then break and push a text token
+                // and when detecting headings just check if the previous character 
+                // is a whitespace.
                 loop  {
                     match iter.next() {
                         Some(v) => {
@@ -351,6 +363,8 @@ fn match_code(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<
 }
 
 fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+    // TODO Perhaps when looking for closing backticks also check if the following characters is a newline.
+    // And only then push a closing token.
     if c.0 == 0 || &text[c.0 - 1..c.0] == "\n" {
         iter.next();
         pos.increment();
@@ -433,6 +447,53 @@ fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peek
     } else {
         tokens.push(Token::new_single(TokenType::Text, c.0));
     }
+}
+
+fn match_indentblock(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, mut pos: &mut Position, c: (usize, char)) {
+    iter.next();
+    pos.increment();
+    if match_string(String::from("  "), text, &mut tokens, &mut iter, &mut pos, c) {
+        loop {
+            match iter.next() {
+                Some(v) => {
+                    pos.increment();
+                    match v.1 {
+                        '\n' => {
+                            if !match_string(String::from("    "), text, &mut tokens, &mut iter, &mut pos, c) {
+                                tokens.push(Token::new(TokenType::IndentBlock, c.0, pos.index - 1));
+                                tokens.push(Token::new_single(TokenType::Text, pos.index - 1));
+                                break;
+                            } 
+                        },
+                        _ => (),
+                    }
+                },
+                None => {
+                    tokens.push(Token::new(TokenType::Text, c.0, pos.index));
+                    break;
+                },
+            }
+        }
+    }
+}
+
+fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) -> bool {
+    // TODO Utilize this function in other places in code.
+    for ch in query.chars() {
+        match iter.next() {
+            Some(v) => {
+                pos.increment();
+                if v.1 == ch {
+                    println!("matched char");
+                } else {
+                    return false;
+                }
+            },
+            None => return false,
+        }
+    }
+
+    true
 }
 
 fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
@@ -538,6 +599,7 @@ fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
             },
             TokenType::HorizontalRule => html.push("<hr>\n".to_string()),
             TokenType::Code => html.push(format!("<code>{}</code>", text[t.begin..t.end].to_string())),
+            TokenType::IndentBlock => html.push(format!("<pre>{}</pre>", text[t.begin + 4..t.end].replace("\n    ", "\n"))),
             TokenType::Error => html.push(format!("<div class=\"error\">ERROR: {}</div>\n", text[t.begin..t.end].to_string())),
             TokenType::Newline => html.push("<br>\n".to_string()),
             TokenType::Text => html.push(text[t.begin..t.end].to_string()),
@@ -745,6 +807,24 @@ mod tests {
         assert!(cbb == 3);
         assert!(cbe == 2);
         assert!(cbl == 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn indentblock() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/indentblock.md")?);
+        let mut indent: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::IndentBlock => {
+                    indent += 1;
+                },
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                _ => panic!("Encounterd TokenType other than expected!"),
+            }
+        }
+        assert!(indent == 4);
 
         Ok(())
     }

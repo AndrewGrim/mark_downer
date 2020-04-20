@@ -15,6 +15,7 @@ fn log() -> Result<(), io::Error> {
         "blockquote",
         "code",
         "codeblock",
+        "indentblock",
     ];
 
     for test in test_files.iter() {
