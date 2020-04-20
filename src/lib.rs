@@ -937,11 +937,13 @@ mod tests {
                 TokenType::Escape => {
                     esc += 1;
                 },
-                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ')|TokenType::Heading => (),
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ')|TokenType::Heading
+                |TokenType::ItalicBegin|TokenType::ItalicEnd|TokenType::BoldBegin|TokenType::BoldEnd
+                |TokenType::StrikeBegin|TokenType::StrikeEnd|TokenType::UnderlineBegin|TokenType::UnderlineEnd => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
-        assert!(esc == 2);
+        assert!(esc == 10);
 
         Ok(())
     }
