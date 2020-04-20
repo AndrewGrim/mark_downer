@@ -1,4 +1,4 @@
 debug:
-	cargo build
+	cargo build && cargo test
 release:
 	cargo build --release
