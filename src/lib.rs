@@ -14,6 +14,10 @@ mod token;
 pub use token::Token;
 pub use token::TokenType;
 
+mod emphasis_state;
+use emphasis_state::Tag;
+use emphasis_state::State;
+
 pub fn markdown_to_html(input: &str, output: &str) -> Result<Vec<Token>, io::Error> {
     let text: String = fs::read_to_string(input)?;
     let tokens = lex(&text);
@@ -27,6 +31,7 @@ fn lex(text: &String) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::with_capacity(text.len());
     let mut iter = text.chars().enumerate().peekable();
     let mut pos: Position = Position::new(0, 0, 0);
+    let mut state: State = State::new();
     loop {
         match iter.next() {
             Some(c) => {
@@ -76,6 +81,7 @@ fn lex(text: &String) -> Vec<Token> {
                         },
                         None => tokens.push(Token::new_single(TokenType::Space, c.0)),
                     },
+                    '*'|'~'|'_' => match_emphasis(&mut state, text, &mut tokens, &mut iter, &mut pos, c),
                     '\n' => tokens.push(Token::new_single(TokenType::Newline, c.0)),
                     '\t' => tokens.push(Token::new_single(TokenType::Tab, c.0)),
                     '\\' => tokens.push(Token::new_single(TokenType::Escape, c.0)),
@@ -478,6 +484,83 @@ fn match_indentblock(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut 
     }
 }
 
+fn match_emphasis(mut state: &mut State, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+    match c.1 {
+        '*' => {
+            match iter.peek() {
+                Some(v) => {
+                    match v.1 {
+                        '*' => {
+                            iter.next();
+                            pos.increment();
+                            if state.bold == Tag::Bold(false) {
+                                tokens.push(Token::new_double(TokenType::BoldBegin, c.0));
+                                state.bold = Tag::Bold(true);
+                            } else {
+                                tokens.push(Token::new_double(TokenType::BoldEnd, c.0));
+                                state.bold = Tag::Bold(false);
+                            }
+                        },
+                        _ => {
+                            if state.italic == Tag::Italic(false) {
+                                tokens.push(Token::new_single(TokenType::ItalicBegin, c.0));
+                                state.italic = Tag::Italic(true);
+                            } else {
+                                tokens.push(Token::new_single(TokenType::ItalicEnd, c.0));
+                                state.italic = Tag::Italic(false);
+                            }
+                        },
+                    }
+                },
+                None => tokens.push(Token::new_single(TokenType::Text, c.0)),
+            }
+        },
+        '~' => {
+            match iter.peek() {
+                Some(v) => {
+                    match v.1 {
+                        '~' => {
+                            iter.next();
+                            pos.increment();
+                            if state.strike == Tag::Strike(false) {
+                                tokens.push(Token::new_double(TokenType::StrikeBegin, c.0));
+                                state.strike = Tag::Strike(true);
+                            } else {
+                                tokens.push(Token::new_double(TokenType::StrikeEnd, c.0));
+                                state.strike = Tag::Strike(false);
+                            }
+                        },
+                        _ => tokens.push(Token::new_single(TokenType::Text, c.0)),
+                    }
+                },
+                None => tokens.push(Token::new_single(TokenType::Text, c.0)),
+            }
+        },
+        '_' => {
+            match iter.peek() {
+                Some(v) => {
+                    match v.1 {
+                        '_' => {
+                            iter.next();
+                            pos.increment();
+                            if state.underline == Tag::Underline(false) {
+                                tokens.push(Token::new_double(TokenType::UnderlineBegin, c.0));
+                                state.underline = Tag::Underline(true);
+                            } else {
+                                tokens.push(Token::new_double(TokenType::UnderlineEnd, c.0));
+                                state.underline = Tag::Underline(false);
+                            }
+                        },
+                        _ => tokens.push(Token::new_single(TokenType::Text, c.0)),
+                    }
+                },
+                None => tokens.push(Token::new_single(TokenType::Text, c.0)),
+            }
+        },
+        _ => panic!("In 'match_emphasis()' found char other than accounted for!"),
+    }
+}
+
 fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) -> bool {
     // TODO Utilize this function in other places in code.
     for ch in query.chars() {
@@ -608,6 +691,14 @@ fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
             TokenType::HorizontalRule => html.push("<hr>\n".to_string()),
             TokenType::Code => html.push(format!("<code>{}</code>", text[t.begin..t.end].to_string())),
             TokenType::IndentBlock => html.push(format!("<pre>{}</pre>", text[t.begin + 4..t.end].replace("\n    ", "\n"))),
+            TokenType::ItalicBegin => html.push("<i>".to_string()),
+            TokenType::ItalicEnd => html.push("</i>".to_string()),
+            TokenType::BoldBegin => html.push("<b>".to_string()),
+            TokenType::BoldEnd => html.push("</b>".to_string()),
+            TokenType::StrikeBegin => html.push("<strike>".to_string()),
+            TokenType::StrikeEnd => html.push("</strike>".to_string()),
+            TokenType::UnderlineBegin => html.push("<u>".to_string()),
+            TokenType::UnderlineEnd => html.push("</u>".to_string()),
             TokenType::Error => html.push(format!("<div class=\"error\">ERROR: {}</div>\n", text[t.begin..t.end].to_string())),
             TokenType::Newline => html.push("<br>\n".to_string()),
             TokenType::Text => html.push(text[t.begin..t.end].to_string()),
@@ -851,6 +942,39 @@ mod tests {
             }
         }
         assert!(esc == 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn emphasis() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/emphasis.md")?);
+        let mut i: usize = 0;
+        let mut b: usize = 0;
+        let mut s: usize = 0;
+        let mut u: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::ItalicBegin|TokenType::ItalicEnd => {
+                    i += 1;
+                },
+                TokenType::BoldBegin|TokenType::BoldEnd => {
+                    b += 1;
+                },
+                TokenType::StrikeBegin|TokenType::StrikeEnd => {
+                    s += 1;
+                },
+                TokenType::UnderlineBegin|TokenType::UnderlineEnd => {
+                    u += 1;
+                },
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                _ => panic!("Encounterd TokenType other than expected!"),
+            }
+        }
+        assert!(i == 6);
+        assert!(b == 4);
+        assert!(s == 2);
+        assert!(u == 2);
 
         Ok(())
     }

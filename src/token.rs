@@ -7,7 +7,7 @@ pub enum TokenType {
     Hash,
     Text,
     Error,
-    Whitespace(char),
+    Whitespace(char), // TODO this can probably be removed, look at match_heading function.
     Checkbutton(bool),
     ImageAlt,
     ImageSrc,
@@ -22,6 +22,14 @@ pub enum TokenType {
     CodeBlockLanguage,
     IndentBlock,
     Escape,
+    ItalicBegin,
+    ItalicEnd,
+    BoldBegin,
+    BoldEnd,
+    StrikeBegin,
+    StrikeEnd,
+    UnderlineBegin,
+    UnderlineEnd,
 }
 
 #[derive(Debug, PartialEq)]
