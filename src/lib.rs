@@ -78,6 +78,7 @@ fn lex(text: &String) -> Vec<Token> {
                     },
                     '\n' => tokens.push(Token::new_single(TokenType::Newline, c.0)),
                     '\t' => tokens.push(Token::new_single(TokenType::Tab, c.0)),
+                    '\\' => tokens.push(Token::new_single(TokenType::Escape, c.0)),
                     _ => tokens.push(Token::new_single(TokenType::Text, c.0)),
                 }
             },
@@ -597,6 +598,13 @@ fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                     None => (),
                 }
             },
+            TokenType::Escape => {
+                if let Some(v) = iter.next() {
+                    html.push(text[v.begin..v.end].to_string());
+                } else {
+                    break;
+                }
+            },
             TokenType::HorizontalRule => html.push("<hr>\n".to_string()),
             TokenType::Code => html.push(format!("<code>{}</code>", text[t.begin..t.end].to_string())),
             TokenType::IndentBlock => html.push(format!("<pre>{}</pre>", text[t.begin + 4..t.end].replace("\n    ", "\n"))),
@@ -825,6 +833,24 @@ mod tests {
             }
         }
         assert!(indent == 4);
+
+        Ok(())
+    }
+
+    #[test]
+    fn escape() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/escape.md")?);
+        let mut esc: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::Escape => {
+                    esc += 1;
+                },
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ')|TokenType::Heading => (),
+                _ => panic!("Encounterd TokenType other than expected!"),
+            }
+        }
+        assert!(esc == 2);
 
         Ok(())
     }

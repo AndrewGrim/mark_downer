@@ -21,6 +21,7 @@ pub enum TokenType {
     CodeBlockEnd,
     CodeBlockLanguage,
     IndentBlock,
+    Escape,
 }
 
 #[derive(Debug, PartialEq)]

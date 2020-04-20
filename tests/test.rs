@@ -16,6 +16,7 @@ fn log() -> Result<(), io::Error> {
         "code",
         "codeblock",
         "indentblock",
+        "escape",
     ];
 
     for test in test_files.iter() {
