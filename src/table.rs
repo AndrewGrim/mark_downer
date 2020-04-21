@@ -10,6 +10,9 @@ pub enum Alignment {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct Column(pub usize, pub String);
+
+#[derive(Debug, PartialEq)]
 pub struct Table {
     pub possible_table_start: usize,
     pub possible_table: bool,
