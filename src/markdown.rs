@@ -6,6 +6,7 @@ use crate::token::Token;
 use crate::token::TokenType;
 use crate::emphasis::Tag;
 use crate::emphasis::State;
+use crate::table::Alignment;
 
 pub fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
     let mut heading_count: usize = 1;
@@ -59,12 +60,12 @@ pub fn match_checkbutton(text: &String, tokens: &mut Vec<Token>, iter: &mut iter
         Some(v) => {
             if v == "[ ] " {
                 tokens.push(Token::new(TokenType::Checkbutton(false), c.0, c.0 + 5));
-                pos.index += 3;
-                iter.nth(3);
+                pos.index += 3; // TODO this is off by one and gets fixed in the parser
+                iter.nth(3); // TODO this is off by one and gets fixed in the parser
             } else if v == "[x] " {
                 tokens.push(Token::new(TokenType::Checkbutton(true), c.0, c.0 + 5));
-                pos.index += 3;
-                iter.nth(3);
+                pos.index += 3; // TODO this is off by one and gets fixed in the parser
+                iter.nth(3); // TODO this is off by one and gets fixed in the parser
             } else {
                 tokens.push(Token::new_single(TokenType::Text, c.0));
             }
@@ -473,8 +474,122 @@ pub fn match_emphasis(mut state: &mut State, text: &String, tokens: &mut Vec<Tok
     }
 }
 
-pub fn match_table(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
-    
+pub fn match_table(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) -> bool {
+    // determine whether it is a table
+    // tokenize each column and record its alignment, record # of columns
+    // once we hit a newline return
+
+    // TODO verify that c.0 is correct here for positioning, i dont
+    // think it is, we should be using index_start instead right?
+
+    let mut index_start = c.0 + 2;
+    let mut index_end = c.0 + 6;
+    loop {
+        let mut _column_alignment = Alignment::Left;
+        match text.get(index_start..index_end) {
+            Some(v) => {
+                if v == " ---" || v == ":---" {
+                    match iter.next() {
+                        Some(v) => {
+                            pos.increment();
+                            match v.1 {
+                                ' ' => _column_alignment = Alignment::LeftOrRight,
+                                ':' => _column_alignment = Alignment::LeftOrCenter,
+                                _ => panic!("In 'match_table()' found char other than accounted for!"),
+                            }
+                            iter.nth(2);
+                            pos.index += 3;
+                            loop {
+                                match iter.next() {
+                                    Some(v) => {
+                                        pos.increment();
+                                        match v.1 {
+                                            '-' => (),
+                                            ':' => {
+                                                if _column_alignment == Alignment::LeftOrCenter {
+                                                    _column_alignment = Alignment::Center;
+                                                    break;
+                                                } else if _column_alignment == Alignment::LeftOrRight {
+                                                    _column_alignment = Alignment::Right;
+                                                    break;
+                                                }
+                                            },
+                                            ' ' => {
+                                                _column_alignment = Alignment::Left;
+                                                break;
+                                            },
+                                            _ => {
+                                                tokens.push(Token::new_single(TokenType::Error, pos.index));
+                                                return false;
+                                            },
+                                        }
+                                    },
+                                    None => {
+                                        tokens.push(Token::new_single(TokenType::Text, c.0 + 1));
+                                        tokens.push(Token::new(TokenType::Text, c.0 + 2, pos.index));
+                                        return false;
+                                    },
+                                }
+                            }
+                            match iter.next() {
+                                Some(v) => {
+                                    pos.increment();
+                                    match v.1 {
+                                        '|' => {
+                                            match _column_alignment {
+                                                Alignment::Left => tokens.push(Token::new(TokenType::TableColumnLeft, index_start - 1, pos.index)),
+                                                Alignment::Right => tokens.push(Token::new(TokenType::TableColumnRight, index_start - 1, pos.index)),
+                                                Alignment::Center => tokens.push(Token::new(TokenType::TableColumnCenter, index_start - 1, pos.index)),
+                                                _ => {
+                                                    tokens.push(Token::new(TokenType::Error, index_start - 1, pos.index));
+                                                    return false;
+                                                },
+                                            }
+                                            match iter.peek() {
+                                                Some(v) => {
+                                                    match v.1 {
+                                                        '\n' => break,
+                                                        ' '|':' => {
+                                                            index_start = pos.index;
+                                                            index_end = index_start + 4;
+                                                            continue;
+                                                        },
+                                                        _ => {
+                                                            tokens.push(Token::new(TokenType::Error, c.0 + 1, pos.index));
+                                                            return false;
+                                                        },
+                                                    }
+                                                },
+                                                None => {
+                                                    tokens.push(Token::new(TokenType::Error, c.0 + 1, pos.index));
+                                                    return false;
+                                                },
+                                            }
+                                        },
+                                        _ => {
+                                            tokens.push(Token::new(TokenType::Error, c.0 + 1, pos.index));
+                                            return false;
+                                        },
+                                    }
+                                },
+                                None => return false,
+                            }
+                        },
+                        None => panic!("In 'match_table()' found None even though v matched correctly!"),
+                    }
+                } else {
+                    tokens.push(Token::new_single(TokenType::Text, c.0 + 1)); // possible problem
+                    return false;
+                }
+            },
+            None => {
+                tokens.push(Token::new_single(TokenType::Text, c.0 + 1));
+                return false;
+            },
+        }
+    }
+
+    true
 }
 
 pub fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) -> bool {
@@ -483,9 +598,7 @@ pub fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter:
         match iter.next() {
             Some(v) => {
                 pos.increment();
-                if v.1 == ch {
-                    println!("matched char");
-                } else {
+                if v.1 != ch {
                     return false;
                 }
             },
