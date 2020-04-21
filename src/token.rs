@@ -32,6 +32,9 @@ pub enum TokenType {
     UnderlineEnd,
     Pipe,
     PossibleTableStart,
+    TableColumnLeft,
+    TableColumnRight,
+    TableColumnCenter,
 }
 
 #[derive(Debug, PartialEq)]

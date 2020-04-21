@@ -59,11 +59,15 @@ pub fn lex(text: &String) -> Vec<Token> {
                                 match v.1 {
                                     '\n' => {
                                         if table.in_table {
+                                            println!("TABLE");
                                             // end of table
                                             // TODO pop elements from vec<token> until we hit a double newline
                                             // those tokens are going to make up the header row of the table.
                                             // Otherwise just treat them as normal.
                                             // Parse data -> (Vec<Token>, Vec<Table>) ??
+
+                                            // we dont actually have to pop anything and we only need to pass tokens
+                                            // to the parser,
                                         }
                                         tokens.push(Token::new_single(TokenType::Newline, v.0));
                                         iter.next();
@@ -75,7 +79,7 @@ pub fn lex(text: &String) -> Vec<Token> {
                                                         table.possible_table = true;
                                                         table.possible_table_start = c.0;
                                                     }
-                                                    tokens.push(Token::new_single(TokenType::PossibleTableStart, v.0));
+                                                    table.table_index = tokens.len() - 1;
                                                 },
                                                 _ => (),
                                             },
@@ -83,10 +87,18 @@ pub fn lex(text: &String) -> Vec<Token> {
                                         }
                                     },
                                     '|' => {
+                                        iter.next();
+                                        pos.increment();
                                         if table.possible_table {
-                                            if markdown::match_table(text, &mut tokens, &mut iter, &mut pos, c) {
-                                                
+                                            let matched = markdown::match_table(text, &mut tokens, &mut iter, &mut pos, c);
+                                            if matched {
+                                                table.in_table = true;
+                                            } else if !matched {
+                                                table.possible_table = false;
                                             }
+                                            // do some things here
+                                        } else {
+                                            tokens.push(Token::new_single(TokenType::Pipe, c.0 + 1));
                                         }
                                     },
                                     ' ' => {

@@ -123,6 +123,7 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
             TokenType::StrikeEnd => html.push("</strike>".to_string()),
             TokenType::UnderlineBegin => html.push("<u>".to_string()),
             TokenType::UnderlineEnd => html.push("</u>".to_string()),
+            TokenType::Pipe => html.push(text[t.begin..t.end].to_string()),
             TokenType::Error => html.push(format!("<div class=\"error\">ERROR: {}</div>\n", text[t.begin..t.end].to_string())),
             TokenType::Newline => html.push("<br>\n".to_string()),
             TokenType::Text => html.push(text[t.begin..t.end].to_string()),

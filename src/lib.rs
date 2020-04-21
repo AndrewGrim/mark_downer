@@ -44,6 +44,7 @@ mod tests {
             "escape",
             "emphasis",
             "html",
+            "table",
         ];
 
         for test in test_files.iter() {
