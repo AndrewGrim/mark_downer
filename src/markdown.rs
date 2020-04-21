@@ -4,8 +4,8 @@ use std::str;
 use crate::position::Position;
 use crate::token::Token;
 use crate::token::TokenType;
-use crate::emphasis_state::Tag;
-use crate::emphasis_state::State;
+use crate::emphasis::Tag;
+use crate::emphasis::State;
 
 pub fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
     let mut heading_count: usize = 1;
@@ -491,3 +491,5 @@ pub fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter:
 
     true
 }
+
+//TODO add tests

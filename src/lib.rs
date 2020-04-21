@@ -6,7 +6,7 @@ use std::io;
 
 mod position;
 mod token;
-mod emphasis_state;
+mod emphasis;
 mod markdown;
 mod lexer;
 mod parser;
