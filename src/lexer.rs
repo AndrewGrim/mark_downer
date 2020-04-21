@@ -61,6 +61,7 @@ pub fn lex(text: &String) -> Vec<Token> {
                                         if table.in_table {
                                             tokens.push(Token::new(TokenType::TableEnd, table.possible_table_start, v.0));
                                             tokens.insert(table.table_index, Token::new_single(TokenType::TableBegin, table.possible_table_start));
+                                            // TODO reset Table so you can easily have multiple tables in one document
                                             // end of table
                                             // TODO pop elements from vec<token> until we hit a double newline
                                             // those tokens are going to make up the header row of the table.
@@ -94,10 +95,10 @@ pub fn lex(text: &String) -> Vec<Token> {
                                             let matched = markdown::match_table(&table, text, &mut tokens, &mut iter, &mut pos, c);
                                             if matched {
                                                 table.in_table = true;
+                                                table.possible_table = false;
                                             } else if !matched {
                                                 table.possible_table = false;
                                             }
-                                            // do some things here
                                         } else {
                                             tokens.push(Token::new_single(TokenType::Pipe, c.0 + 1));
                                         }
