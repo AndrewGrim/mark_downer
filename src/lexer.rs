@@ -1,14 +1,16 @@
 use crate::token::Token;
 use crate::token::TokenType;
 use crate::position::Position;
-use crate::emphasis_state::State;
+use crate::emphasis::State;
 use crate::markdown;
+use crate::table::Table;
 
 pub fn lex(text: &String) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::with_capacity(text.len());
     let mut iter = text.chars().enumerate().peekable();
     let mut pos: Position = Position::new(0, 0, 0);
     let mut state: State = State::new();
+    let mut table: Table = Table::new();
     loop {
         match iter.next() {
             Some(c) => {
@@ -49,17 +51,69 @@ pub fn lex(text: &String) -> Vec<Token> {
                             None => tokens.push(Token::new_single(TokenType::Text, c.0)),
                         }
                     },
-                    ' ' => match iter.peek() {
-                        Some(v) => {
-                            match v.1 {
-                                ' ' => markdown::match_indentblock(text, &mut tokens, &mut iter, &mut pos, c),
-                                _ => tokens.push(Token::new_single(TokenType::Space, c.0)),
-                            }
-                        },
-                        None => tokens.push(Token::new_single(TokenType::Space, c.0)),
+                    ' ' => tokens.push(Token::new_single(TokenType::Space, c.0)),
+                    '\n' => {  // TODO break this off into its own function
+                        tokens.push(Token::new_single(TokenType::Newline, c.0));
+                        match iter.peek() {
+                            Some(v) => {
+                                match v.1 {
+                                    '\n' => {
+                                        if table.in_table {
+                                            // end of table
+                                            // TODO pop elements from vec<token> until we hit a double newline
+                                            // those tokens are going to make up the header row of the table.
+                                            // Otherwise just treat them as normal.
+                                            // Parse data -> (Vec<Token>, Vec<Table>) ??
+                                        }
+                                        tokens.push(Token::new_single(TokenType::Newline, v.0));
+                                        iter.next();
+                                        pos.increment();
+                                        match iter.peek() {
+                                            Some(v) => match v.1 {
+                                                '|' => {
+                                                    if !table.possible_table {
+                                                        table.possible_table = true;
+                                                        table.possible_table_start = c.0;
+                                                    }
+                                                    tokens.push(Token::new_single(TokenType::PossibleTableStart, v.0));
+                                                },
+                                                _ => (),
+                                            },
+                                            None => (),
+                                        }
+                                    },
+                                    '|' => {
+                                        if table.possible_table {
+                                            if markdown::match_table(text, &mut tokens, &mut iter, &mut pos, c) {
+                                                
+                                            }
+                                        }
+                                    },
+                                    ' ' => {
+                                        iter.next();
+                                        pos.increment();
+                                        match iter.peek() {
+                                            Some(v) => {
+                                                match v.1 {
+                                                    ' ' => markdown::match_indentblock(text, &mut tokens, &mut iter, &mut pos, c),
+                                                    _ => {
+                                                        tokens.push(Token::new_single(TokenType::Space, v.0));
+                                                        iter.next();
+                                                        pos.increment();
+                                                    },
+                                                }
+                                            },
+                                            None => tokens.push(Token::new_single(TokenType::Space, c.0)),
+                                        }
+                                    },
+                                    _ => (),
+                                }
+                            },
+                            None => (),
+                        }
                     },
                     '*'|'~'|'_' => markdown::match_emphasis(&mut state, text, &mut tokens, &mut iter, &mut pos, c),
-                    '\n' => tokens.push(Token::new_single(TokenType::Newline, c.0)),
+                    '|' => tokens.push(Token::new_single(TokenType::Pipe, c.0)),
                     '\t' => tokens.push(Token::new_single(TokenType::Tab, c.0)),
                     '\\' => tokens.push(Token::new_single(TokenType::Escape, c.0)),
                     _ => tokens.push(Token::new_single(TokenType::Text, c.0)),

@@ -10,6 +10,7 @@ mod emphasis;
 mod markdown;
 mod lexer;
 mod parser;
+mod table;
 
 pub use token::Token;
 pub use token::TokenType;

@@ -473,6 +473,10 @@ pub fn match_emphasis(mut state: &mut State, text: &String, tokens: &mut Vec<Tok
     }
 }
 
+pub fn match_table(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+    
+}
+
 pub fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) -> bool {
     // TODO Utilize this function in other places in code.
     for ch in query.chars() {

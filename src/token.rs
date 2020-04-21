@@ -30,6 +30,8 @@ pub enum TokenType {
     StrikeEnd,
     UnderlineBegin,
     UnderlineEnd,
+    Pipe,
+    PossibleTableStart,
 }
 
 #[derive(Debug, PartialEq)]
