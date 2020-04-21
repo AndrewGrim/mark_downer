@@ -3,6 +3,7 @@ use std::io::Write;
 
 use crate::token::Token;
 use crate::token::TokenType;
+use crate::table::Column;
 
 pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
     let mut html: Vec<String> = Vec::with_capacity(text.len());
@@ -110,6 +111,86 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                     html.push(text[v.begin..v.end].to_string());
                 } else {
                     break;
+                }
+            },
+            TokenType::TableBegin => {
+                html.push("<table>\n<tr>\n".to_string());
+                let mut columns: Vec<Column> = Vec::with_capacity(15);
+                loop {
+                    match iter.peek() {
+                        Some(n) => {
+                            match n.id {
+                                TokenType::TableColumnLeft => {
+                                    columns.push(Column(columns.len(), "left".to_string()));
+                                    iter.next();
+                                },
+                                TokenType::TableColumnRight => {
+                                    columns.push(Column(columns.len(), "right".to_string()));
+                                    iter.next();
+                                },
+                                TokenType::TableColumnCenter => {
+                                    columns.push(Column(columns.len(), "center".to_string()));
+                                    iter.next();
+                                },
+                                _ => break,
+                            }
+                        },
+                        None => (),
+                    }
+                }
+                let mut heading_count = columns.len();
+                let mut heading = true;
+                let mut new_row = false;
+                let mut cell_count = columns.len();
+                loop {
+                    match iter.next() {
+                        Some(n) => {
+                            match n.id {
+                                TokenType::Pipe => {
+                                    if heading {
+                                        if heading_count > 0 {
+                                            if heading_count == columns.len() {
+                                                html.push(format!("<th align=\"{}\">\n", columns[heading_count - 1].1));
+                                            } else {
+                                                html.push(format!("\n</th>\n<th align=\"{}\">\n", columns[heading_count - 1].1));
+                                            }
+                                            heading_count -= 1;
+                                        } else {
+                                            html.push("\n</th>\n".to_string());
+                                            html.push("</tr>\n".to_string());
+                                            heading = false;
+                                            match iter.peek() {
+                                                Some(n) => {
+                                                    if n.id == TokenType::Newline {
+                                                        iter.next();
+                                                    }
+                                                },
+                                                None => (),
+                                            }
+                                        }
+                                    } else {
+                                        if cell_count > 0 {
+                                            if cell_count == columns.len() {
+                                                html.push("<tr>\n<td>\n".to_string());
+                                            } else {
+                                                html.push("\n</td>\n<td>\n".to_string());
+                                            }
+                                            cell_count -= 1;
+                                        } else {
+                                            html.push("\n</td>\n".to_string());
+                                        }
+                                    }
+                                },
+                                TokenType::Newline => {
+                                    html.push("</tr>\n".to_string());
+                                    cell_count = columns.len();
+                                },
+                                TokenType::TableEnd => break,
+                                _ => html.push(text[n.begin..n.end].to_string()),
+                            }
+                        },
+                        None => (),
+                    }
                 }
             },
             TokenType::HorizontalRule => html.push("<hr>\n".to_string()),
