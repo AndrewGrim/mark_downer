@@ -537,11 +537,11 @@ pub fn match_table(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peek
                                     match v.1 {
                                         '|' => {
                                             match _column_alignment {
-                                                Alignment::Left => tokens.push(Token::new(TokenType::TableColumnLeft, index_start - 1, pos.index)),
-                                                Alignment::Right => tokens.push(Token::new(TokenType::TableColumnRight, index_start - 1, pos.index)),
-                                                Alignment::Center => tokens.push(Token::new(TokenType::TableColumnCenter, index_start - 1, pos.index)),
+                                                Alignment::Left => tokens.push(Token::new(TokenType::TableColumnLeft, index_start - 1, pos.index - 1)),
+                                                Alignment::Right => tokens.push(Token::new(TokenType::TableColumnRight, index_start - 1, pos.index - 1)),
+                                                Alignment::Center => tokens.push(Token::new(TokenType::TableColumnCenter, index_start - 1, pos.index - 1)),
                                                 _ => {
-                                                    tokens.push(Token::new(TokenType::Error, index_start - 1, pos.index));
+                                                    tokens.push(Token::new(TokenType::Error, index_start - 1, pos.index - 1));
                                                     return false;
                                                 },
                                             }
@@ -555,19 +555,19 @@ pub fn match_table(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peek
                                                             continue;
                                                         },
                                                         _ => {
-                                                            tokens.push(Token::new(TokenType::Error, c.0 + 1, pos.index));
+                                                            tokens.push(Token::new(TokenType::Error, c.0 + 1, pos.index - 1));
                                                             return false;
                                                         },
                                                     }
                                                 },
                                                 None => {
-                                                    tokens.push(Token::new(TokenType::Error, c.0 + 1, pos.index));
+                                                    tokens.push(Token::new(TokenType::Error, c.0 + 1, pos.index - 1));
                                                     return false;
                                                 },
                                             }
                                         },
                                         _ => {
-                                            tokens.push(Token::new(TokenType::Error, c.0 + 1, pos.index));
+                                            tokens.push(Token::new(TokenType::Error, c.0 + 1, pos.index - 1));
                                             return false;
                                         },
                                     }
