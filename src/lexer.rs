@@ -59,7 +59,8 @@ pub fn lex(text: &String) -> Vec<Token> {
                                 match v.1 {
                                     '\n' => {
                                         if table.in_table {
-                                            println!("TABLE");
+                                            tokens.push(Token::new(TokenType::TableEnd, table.possible_table_start, v.0));
+                                            tokens.insert(table.table_index, Token::new_single(TokenType::TableBegin, table.possible_table_start));
                                             // end of table
                                             // TODO pop elements from vec<token> until we hit a double newline
                                             // those tokens are going to make up the header row of the table.
@@ -77,9 +78,9 @@ pub fn lex(text: &String) -> Vec<Token> {
                                                 '|' => {
                                                     if !table.possible_table {
                                                         table.possible_table = true;
-                                                        table.possible_table_start = c.0;
+                                                        table.possible_table_start = v.0;
                                                     }
-                                                    table.table_index = tokens.len() - 1;
+                                                    table.table_index = tokens.len();
                                                 },
                                                 _ => (),
                                             },
@@ -90,7 +91,7 @@ pub fn lex(text: &String) -> Vec<Token> {
                                         iter.next();
                                         pos.increment();
                                         if table.possible_table {
-                                            let matched = markdown::match_table(text, &mut tokens, &mut iter, &mut pos, c);
+                                            let matched = markdown::match_table(&table, text, &mut tokens, &mut iter, &mut pos, c);
                                             if matched {
                                                 table.in_table = true;
                                             } else if !matched {

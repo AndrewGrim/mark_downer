@@ -32,6 +32,8 @@ pub enum TokenType {
     UnderlineEnd,
     Pipe,
     PossibleTableStart,
+    TableBegin,
+    TableEnd,
     TableColumnLeft,
     TableColumnRight,
     TableColumnCenter,

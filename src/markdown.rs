@@ -7,6 +7,7 @@ use crate::token::TokenType;
 use crate::emphasis::Tag;
 use crate::emphasis::State;
 use crate::table::Alignment;
+use crate::table::Table;
 
 pub fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
     let mut heading_count: usize = 1;
@@ -474,7 +475,8 @@ pub fn match_emphasis(mut state: &mut State, text: &String, tokens: &mut Vec<Tok
     }
 }
 
-pub fn match_table(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) -> bool {
+pub fn match_table(table: &Table, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) -> bool {
+    let mut columns: Vec<Token> = Vec::with_capacity(15);
     // determine whether it is a table
     // tokenize each column and record its alignment, record # of columns
     // once we hit a newline return
@@ -537,9 +539,10 @@ pub fn match_table(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peek
                                     match v.1 {
                                         '|' => {
                                             match _column_alignment {
-                                                Alignment::Left => tokens.push(Token::new(TokenType::TableColumnLeft, index_start - 1, pos.index - 1)),
-                                                Alignment::Right => tokens.push(Token::new(TokenType::TableColumnRight, index_start - 1, pos.index - 1)),
-                                                Alignment::Center => tokens.push(Token::new(TokenType::TableColumnCenter, index_start - 1, pos.index - 1)),
+                                                // insert after table begin
+                                                Alignment::Left => columns.push(Token::new(TokenType::TableColumnLeft, index_start - 1, pos.index - 1)),
+                                                Alignment::Right => columns.push(Token::new(TokenType::TableColumnRight, index_start - 1, pos.index - 1)),
+                                                Alignment::Center => columns.push(Token::new(TokenType::TableColumnCenter, index_start - 1, pos.index - 1)),
                                                 _ => {
                                                     tokens.push(Token::new(TokenType::Error, index_start - 1, pos.index - 1));
                                                     return false;
@@ -587,6 +590,11 @@ pub fn match_table(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peek
                 return false;
             },
         }
+    }
+
+    println!("PRINTINGASUOHDAOSID");
+    for _i in (0..columns.len()).rev() {
+        tokens.insert(table.table_index, columns.pop().unwrap());
     }
 
     true
