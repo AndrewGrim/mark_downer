@@ -476,7 +476,6 @@ pub fn match_emphasis(mut state: &mut State, text: &String, tokens: &mut Vec<Tok
 }
 
 pub fn match_table(table: &Table, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) -> bool {
-    let mut columns: Vec<Token> = Vec::with_capacity(15);
     // determine whether it is a table
     // tokenize each column and record its alignment, record # of columns
     // once we hit a newline return
@@ -540,9 +539,9 @@ pub fn match_table(table: &Table, text: &String, tokens: &mut Vec<Token>, iter: 
                                         '|' => {
                                             match _column_alignment {
                                                 // insert after table begin
-                                                Alignment::Left => columns.push(Token::new(TokenType::TableColumnLeft, index_start - 1, pos.index - 1)),
-                                                Alignment::Right => columns.push(Token::new(TokenType::TableColumnRight, index_start - 1, pos.index - 1)),
-                                                Alignment::Center => columns.push(Token::new(TokenType::TableColumnCenter, index_start - 1, pos.index - 1)),
+                                                Alignment::Left => tokens.insert(table.table_index, Token::new(TokenType::TableColumnLeft, index_start - 1, pos.index - 1)),
+                                                Alignment::Right => tokens.insert(table.table_index, Token::new(TokenType::TableColumnRight, index_start - 1, pos.index - 1)),
+                                                Alignment::Center => tokens.insert(table.table_index, Token::new(TokenType::TableColumnCenter, index_start - 1, pos.index - 1)),
                                                 _ => {
                                                     tokens.push(Token::new(TokenType::Error, index_start - 1, pos.index - 1));
                                                     return false;
@@ -551,7 +550,10 @@ pub fn match_table(table: &Table, text: &String, tokens: &mut Vec<Token>, iter: 
                                             match iter.peek() {
                                                 Some(v) => {
                                                     match v.1 {
-                                                        '\n' => break,
+                                                        '\n' => {
+                                                            iter.next();
+                                                            break;
+                                                        },
                                                         ' '|':' => {
                                                             index_start = pos.index;
                                                             index_end = index_start + 4;
@@ -590,11 +592,6 @@ pub fn match_table(table: &Table, text: &String, tokens: &mut Vec<Token>, iter: 
                 return false;
             },
         }
-    }
-
-    println!("PRINTINGASUOHDAOSID");
-    for _i in (0..columns.len()).rev() {
-        tokens.insert(table.table_index, columns.pop().unwrap());
     }
 
     true
