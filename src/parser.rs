@@ -140,7 +140,6 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                 }
                 let mut heading_count = columns.len();
                 let mut heading = true;
-                let mut new_row = false;
                 let mut cell_count = columns.len();
                 loop {
                     match iter.next() {

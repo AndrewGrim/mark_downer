@@ -476,13 +476,7 @@ pub fn match_emphasis(mut state: &mut State, text: &String, tokens: &mut Vec<Tok
 }
 
 pub fn match_table(table: &Table, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) -> bool {
-    // determine whether it is a table
-    // tokenize each column and record its alignment, record # of columns
-    // once we hit a newline return
-
-    // TODO verify that c.0 is correct here for positioning, i dont
-    // think it is, we should be using index_start instead right?
-
+    // TODO verify index positions for errors and others 
     let mut index_start = c.0 + 2;
     let mut index_end = c.0 + 6;
     loop {
@@ -538,7 +532,6 @@ pub fn match_table(table: &Table, text: &String, tokens: &mut Vec<Token>, iter: 
                                     match v.1 {
                                         '|' => {
                                             match _column_alignment {
-                                                // insert after table begin
                                                 Alignment::Left => tokens.insert(table.table_index, Token::new(TokenType::TableColumnLeft, index_start - 1, pos.index - 1)),
                                                 Alignment::Right => tokens.insert(table.table_index, Token::new(TokenType::TableColumnRight, index_start - 1, pos.index - 1)),
                                                 Alignment::Center => tokens.insert(table.table_index, Token::new(TokenType::TableColumnCenter, index_start - 1, pos.index - 1)),
@@ -583,12 +576,12 @@ pub fn match_table(table: &Table, text: &String, tokens: &mut Vec<Token>, iter: 
                         None => panic!("In 'match_table()' found None even though v matched correctly!"),
                     }
                 } else {
-                    tokens.push(Token::new_single(TokenType::Text, c.0 + 1)); // possible problem
+                    tokens.push(Token::new_single(TokenType::Text, pos.index - 1));
                     return false;
                 }
             },
             None => {
-                tokens.push(Token::new_single(TokenType::Text, c.0 + 1));
+                tokens.push(Token::new_single(TokenType::Text, pos.index - 1));
                 return false;
             },
         }

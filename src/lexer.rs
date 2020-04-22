@@ -62,14 +62,7 @@ pub fn lex(text: &String) -> Vec<Token> {
                                             tokens.push(Token::new(TokenType::TableEnd, table.possible_table_start, v.0));
                                             tokens.insert(table.table_index, Token::new_single(TokenType::TableBegin, table.possible_table_start));
                                             // TODO reset Table so you can easily have multiple tables in one document
-                                            // end of table
-                                            // TODO pop elements from vec<token> until we hit a double newline
-                                            // those tokens are going to make up the header row of the table.
-                                            // Otherwise just treat them as normal.
-                                            // Parse data -> (Vec<Token>, Vec<Table>) ??
-
-                                            // we dont actually have to pop anything and we only need to pass tokens
-                                            // to the parser,
+                                            // might not be needed, but we should still clear it
                                         }
                                         tokens.push(Token::new_single(TokenType::Newline, v.0));
                                         iter.next();
@@ -410,6 +403,36 @@ mod tests {
                 _ => panic!(format!("Encounterd TokenType other than expected! {:#?}", token)),
             }
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn table() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/table.md")?);
+        let mut p: usize = 0;
+        let mut tb: usize = 0;
+        let mut te: usize = 0;
+        let mut cl: usize = 0;
+        let mut cr: usize = 0;
+        let mut cc: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::Pipe => p += 1,
+                TokenType::TableBegin => tb += 1,
+                TokenType::TableEnd => te += 1,
+                TokenType::TableColumnLeft => cl += 1,
+                TokenType::TableColumnRight => cr += 1,
+                TokenType::TableColumnCenter => cc += 1,
+                _ => (),
+            }
+        }
+        assert!(p == 16);
+        assert!(tb == 1);
+        assert!(te == 1);
+        assert!(cl == 1);
+        assert!(cr == 1);
+        assert!(cc == 1);
 
         Ok(())
     }
