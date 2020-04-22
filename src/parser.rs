@@ -184,6 +184,27 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                                     html.push("</tr>\n".to_string());
                                     cell_count = columns.len();
                                 },
+                                TokenType::Checkbutton(bool) => {
+                                    if n.id == TokenType::Checkbutton(true) {
+                                        html.push(format!("<input type=\"checkbox\" checked>"));
+                                    } else {
+                                        html.push(format!("<input type=\"checkbox\">"));
+                                    }
+                                },
+                                TokenType::ImageAlt => {
+                                    html.push(format!("<img alt=\"{}\"", text[n.begin..n.end].to_string()));
+                                    let n = iter.next().unwrap();
+                                    html.push(format!(" src=\"{}\">", text[n.begin..n.end].to_string()));
+                                },
+                                TokenType::LinkHref => {
+                                    html.push(format!("<a href=\"{}\">", text[n.begin..n.end].to_string()));
+                                    let tok = iter.next().unwrap();
+                                    if text[tok.begin..tok.end].len() == 0 {
+                                        html.push(format!("{}</a>", text[n.begin..n.end].to_string()));
+                                    } else {
+                                        html.push(format!("{}</a>", text[tok.begin..tok.end].to_string()));
+                                    }
+                                },
                                 TokenType::TableEnd => break,
                                 TokenType::Code => html.push(format!("<code>{}</code>", text[n.begin..n.end].to_string())),
                                 TokenType::ItalicBegin => html.push("<i>".to_string()),

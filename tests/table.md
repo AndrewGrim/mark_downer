@@ -12,3 +12,14 @@
 | **col 5 is**      | centered      |   123 |
 | col 6 is      | ***right-aligned*** |    69 |
 
+| Image 1 | Image 2 |
+| ------- | ------- |
+| ![works](images/icon.png) | ![broken](image/icon.png) |
+
+| Link 1 | Link 2 |
+| ------- | ------- |
+| [works](images/icon.png) | [broken](image/icon.png) |
+
+| Check 1 | Check 2 | Check 3 |
+| ------- | ------- | --- |
+| - [x] checked | - [ ] unchecked | - [] not a checkbutton|
