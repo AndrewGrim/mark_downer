@@ -61,12 +61,12 @@ pub fn match_checkbutton(text: &String, tokens: &mut Vec<Token>, iter: &mut iter
         Some(v) => {
             if v == "[ ] " {
                 tokens.push(Token::new(TokenType::Checkbutton(false), c.0, c.0 + 5));
-                pos.index += 3; // TODO this is off by one and gets fixed in the parser
-                iter.nth(3); // TODO this is off by one and gets fixed in the parser
+                iter.nth(3);
+                pos.index += 4;
             } else if v == "[x] " {
                 tokens.push(Token::new(TokenType::Checkbutton(true), c.0, c.0 + 5));
-                pos.index += 3; // TODO this is off by one and gets fixed in the parser
-                iter.nth(3); // TODO this is off by one and gets fixed in the parser
+                iter.nth(3);
+                pos.index += 4;
             } else {
                 tokens.push(Token::new_single(TokenType::Text, c.0));
             }
