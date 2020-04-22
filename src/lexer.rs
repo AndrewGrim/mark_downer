@@ -418,33 +418,85 @@ mod tests {
         Ok(())
     }
 
-    // #[test]
-    // fn table() -> Result<(), io::Error> {
-    //     let t = lex(&fs::read_to_string("tests/table.md")?);
-    //     let mut p: usize = 0;
-    //     let mut tb: usize = 0;
-    //     let mut te: usize = 0;
-    //     let mut cl: usize = 0;
-    //     let mut cr: usize = 0;
-    //     let mut cc: usize = 0;
-    //     for token in t.iter() {
-    //         match token.id {
-    //             TokenType::Pipe => p += 1,
-    //             TokenType::TableBegin => tb += 1,
-    //             TokenType::TableEnd => te += 1,
-    //             TokenType::TableColumnLeft => cl += 1,
-    //             TokenType::TableColumnRight => cr += 1,
-    //             TokenType::TableColumnCenter => cc += 1,
-    //             _ => (),
-    //         }
-    //     }
-    //     assert!(p == 16);
-    //     assert!(tb == 1);
-    //     assert!(te == 1);
-    //     assert!(cl == 1);
-    //     assert!(cr == 1);
-    //     assert!(cc == 1);
+    #[test]
+    fn table() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/table.md")?);
+        let mut p: usize = 0;
+        let mut tb: usize = 0;
+        let mut te: usize = 0;
+        let mut cl: usize = 0;
+        let mut cr: usize = 0;
+        let mut cc: usize = 0;
 
-    //     Ok(())
-    // }
+        let mut ib: usize = 0;
+        let mut ie: usize = 0;
+        let mut bb: usize = 0;
+        let mut be: usize = 0;
+        let mut sb: usize = 0;
+        let mut se: usize = 0;
+        let mut ub: usize = 0;
+        let mut ue: usize = 0;
+        let mut c: usize = 0;
+
+        let mut ia: usize = 0;
+        let mut is: usize = 0;
+        let mut lh: usize = 0;
+        let mut lt: usize = 0;
+        let mut ct: usize = 0;
+        let mut cf: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::Pipe => p += 1,
+                TokenType::TableBegin => tb += 1,
+                TokenType::TableEnd => te += 1,
+                TokenType::TableColumnLeft => cl += 1,
+                TokenType::TableColumnRight => cr += 1,
+                TokenType::TableColumnCenter => cc += 1,
+
+                TokenType::ItalicBegin => ib += 1,
+                TokenType::ItalicEnd => ie += 1,
+                TokenType::BoldBegin => bb += 1,
+                TokenType::BoldEnd => be += 1,
+                TokenType::StrikeBegin => sb += 1,
+                TokenType::StrikeEnd => se += 1,
+                TokenType::UnderlineBegin => ub += 1,
+                TokenType::UnderlineEnd => ue += 1,
+                TokenType::Code => c += 1,
+                
+                TokenType::ImageAlt => ia += 1,
+                TokenType::ImageSrc => is += 1,
+                TokenType::LinkHref => lh += 1,
+                TokenType::LinkText => lt += 1,
+
+                TokenType::Checkbutton(true) => ct += 1,
+                TokenType::Checkbutton(false) => cf += 1,
+                _ => (),
+            }
+        }
+        assert!(p == 52);
+        assert!(tb == 5);
+        assert!(te == 5);
+        assert!(cl == 9);
+        assert!(cr == 2);
+        assert!(cc == 2);
+
+        assert!(ib == 2);
+        assert!(ie == 2);
+        assert!(bb == 2);
+        assert!(be == 2);
+        assert!(sb == 1);
+        assert!(se == 1);
+        assert!(ub == 1);
+        assert!(ue == 1);
+        assert!(c == 1);
+
+        assert!(ia == 2);
+        assert!(is == 2);
+        assert!(lh == 2);
+        assert!(lt == 2);
+        assert!(ct == 1);
+        assert!(cf == 1);
+        
+        Ok(())
+    }
 }
