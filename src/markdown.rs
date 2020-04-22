@@ -9,50 +9,32 @@ use crate::emphasis;
 use crate::table::Alignment;
 use crate::table;
 
-pub fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
-    let mut heading_count: usize = 1;
-    while let Some(v) = iter.next() {
-        pos.increment();
-        match v.1 {
-            '#' => {
-                heading_count += 1;
-            },
-            ' ' => {
-                if heading_count > 6 {
-                    tokens.push(Token::new(TokenType::Error, c.0, c.0 + heading_count));
-                } else {
-                    tokens.push(Token::new(TokenType::Heading, c.0, c.0 + heading_count));
-                }
-                tokens.push(Token::new_single(TokenType::Space, c.0 + heading_count));
-                break;
-            },
-            _ =>  {
-                // TODO The loop below is likely unnecessary
-                // instead if we hit anything else then break and push a text token
-                // and when detecting headings just check if the previous character 
-                // is a whitespace.
-                loop  {
-                    match iter.next() {
-                        Some(v) => {
-                            pos.increment();
-                            match v.1 {
-                                ' '|'\t'|'\n' => {
-                                    tokens.push(Token::new(TokenType::Text, c.0, v.0));
-                                    tokens.push(Token::new_single(TokenType::Whitespace(v.1), v.0));
-                                    break;
-                                },
-                                _ => (),
-                            }
-                        },
-                        None => {
-                            tokens.push(Token::new(TokenType::Text, c.0, pos.index));
-                            break;
-                        },
+pub fn match_heading(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+    if c.0 == 0 || &text[c.0 - 1..c.0] == "\n" {
+        let mut heading_count: usize = 1;
+        while let Some(v) = iter.next() {
+            pos.increment();
+            match v.1 {
+                '#' => {
+                    heading_count += 1;
+                },
+                ' ' => {
+                    if heading_count > 6 {
+                        tokens.push(Token::new(TokenType::Error, c.0, c.0 + heading_count));
+                    } else {
+                        tokens.push(Token::new(TokenType::Heading, c.0, c.0 + heading_count));
                     }
-                }
-                break;
-            },
+                    tokens.push(Token::new_single(TokenType::Space, c.0 + heading_count));
+                    break;
+                },
+                _ =>  {
+                    tokens.push(Token::new(TokenType::Text, c.0, pos.index));
+                    break;
+                },
+            }
         }
+    } else {
+        tokens.push(Token::new_single(TokenType::Text, c.0));
     }
 }
 

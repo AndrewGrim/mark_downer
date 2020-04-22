@@ -17,7 +17,7 @@ pub fn lex(text: &String) -> Vec<Token> {
                 pos.increment();
                 match c.1 {
                     '#' => {
-                        markdown::match_heading(&mut tokens, &mut iter, &mut pos, c);
+                        markdown::match_heading(&text, &mut tokens, &mut iter, &mut pos, c);
                     },
                     '-' => {
                         match iter.peek() {
