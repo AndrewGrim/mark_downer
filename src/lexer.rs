@@ -58,13 +58,10 @@ pub fn lex(text: &String) -> Vec<Token> {
                             Some(v) => {
                                 match v.1 {
                                     '\n' => {
-                                        // TODO we are likely eating a newline, causing some funky stuff in here
                                         if table.in_table {
                                             tokens.push(Token::new(TokenType::TableEnd, table.possible_table_start, v.0));
                                             tokens.insert(table.table_index, Token::new_single(TokenType::TableBegin, table.possible_table_start));
                                             table = table::State::new();
-                                            // TODO reset Table so you can easily have multiple tables in one document
-                                            // might not be needed, but we should still clear it
                                         }
                                         tokens.push(Token::new_single(TokenType::Newline, v.0));
                                         iter.next();
@@ -74,7 +71,7 @@ pub fn lex(text: &String) -> Vec<Token> {
                                                 '|' => {
                                                     if !table.possible_table {
                                                         table.possible_table = true;
-                                                        table.possible_table_start = v.0; // TODO prob get rid of this
+                                                        table.possible_table_start = v.0;
                                                         table.table_index = tokens.len();
                                                     }
                                                 },
