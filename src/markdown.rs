@@ -5,9 +5,9 @@ use crate::position::Position;
 use crate::token::Token;
 use crate::token::TokenType;
 use crate::emphasis::Tag;
-use crate::emphasis::State;
+use crate::emphasis;
 use crate::table::Alignment;
-use crate::table::Table;
+use crate::table;
 
 pub fn match_heading(tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
     let mut heading_count: usize = 1;
@@ -398,7 +398,7 @@ pub fn match_indentblock(text: &String, mut tokens: &mut Vec<Token>, mut iter: &
     }
 }
 
-pub fn match_emphasis(mut state: &mut State, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+pub fn match_emphasis(mut state: &mut emphasis::State, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
     match c.1 {
         '*' => {
             match iter.peek() {
@@ -475,10 +475,10 @@ pub fn match_emphasis(mut state: &mut State, text: &String, tokens: &mut Vec<Tok
     }
 }
 
-pub fn match_table(table: &Table, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) -> bool {
+pub fn match_table(table: &table::State, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) -> bool {
     // TODO verify index positions for errors and others 
     let mut index_start = c.0 + 2;
-    let mut index_end = c.0 + 6;
+    let mut index_end = index_start + 4;
     loop {
         let mut _column_alignment = Alignment::Left;
         match text.get(index_start..index_end) {
@@ -545,6 +545,7 @@ pub fn match_table(table: &Table, text: &String, tokens: &mut Vec<Token>, iter: 
                                                     match v.1 {
                                                         '\n' => {
                                                             iter.next();
+                                                            pos.increment();
                                                             break;
                                                         },
                                                         ' '|':' => {

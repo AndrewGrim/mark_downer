@@ -13,17 +13,16 @@ pub enum Alignment {
 pub struct Column(pub usize, pub String);
 
 #[derive(Debug, PartialEq)]
-pub struct Table {
+pub struct State {
     pub possible_table_start: usize,
     pub possible_table: bool,
     pub in_table: bool,
     pub table_index: usize,
-    //pub pipes: Vec<token::Token>,
 }
 
-impl Table {
-    pub fn new() -> Table {
-        Table {
+impl State {
+    pub fn new() -> State {
+        State {
             possible_table_start: 0,
             possible_table: false,
             in_table: false,
