@@ -6,9 +6,9 @@
 | col 2 is      | centered      |   123 |
 | col 3 is      | right-aligned |    69 |
 
-| Heading Col 4 | Heading Col 5 | HCol 6|
+| __Heading Col 4__ | ~~Heading Col 5~~ | *HCol 6*|
 | ------------- |:-------------:| -----:|
-| col 4 is      | left-aligned  | 12379 |
-| col 5 is      | centered      |   123 |
-| col 6 is      | right-aligned |    69 |
+| col 4 is      | left-aligned  | `12379` |
+| **col 5 is**      | centered      |   123 |
+| col 6 is      | ***right-aligned*** |    69 |
 

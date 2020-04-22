@@ -185,6 +185,16 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                                     cell_count = columns.len();
                                 },
                                 TokenType::TableEnd => break,
+                                TokenType::Code => html.push(format!("<code>{}</code>", text[n.begin..n.end].to_string())),
+                                TokenType::ItalicBegin => html.push("<i>".to_string()),
+                                TokenType::ItalicEnd => html.push("</i>".to_string()),
+                                TokenType::BoldBegin => html.push("<b>".to_string()),
+                                TokenType::BoldEnd => html.push("</b>".to_string()),
+                                TokenType::StrikeBegin => html.push("<strike>".to_string()),
+                                TokenType::StrikeEnd => html.push("</strike>".to_string()),
+                                TokenType::UnderlineBegin => html.push("<u>".to_string()),
+                                TokenType::UnderlineEnd => html.push("</u>".to_string()),
+                                TokenType::Error => html.push(format!("<div class=\"error\">ERROR: {}</div>\n", text[n.begin..n.end].to_string())),
                                 _ => html.push(text[n.begin..n.end].to_string()),
                             }
                         },
