@@ -1,5 +1,5 @@
-    indented block
-        indented
+    not indented because no preceding newline
+    indented
 a
     indented block
         indented
@@ -11,5 +11,7 @@ end
         indented
 this is the end of the indented block
 
-    indented block
+    indented block following double newline
         indented
+
+    no indent because end of file

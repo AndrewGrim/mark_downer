@@ -73,6 +73,7 @@ pub fn lex(text: &String) -> Vec<Token> {
                                                         table.table_index = tokens.len();
                                                     }
                                                 },
+                                                ' ' => markdown::match_indentblock(text, &mut tokens, &mut iter, c),
                                                 _ => (),
                                             },
                                             None => (),
