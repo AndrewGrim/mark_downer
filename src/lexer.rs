@@ -4,27 +4,26 @@ use crate::position::Position;
 use crate::emphasis;
 use crate::markdown;
 use crate::table;
+use crate::wrapper::CharsWithPosition;
 
 pub fn lex(text: &String) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::with_capacity(text.len());
-    let mut iter = text.chars().enumerate().peekable();
-    let mut pos: Position = Position::new(0, 0, 0);
+    let mut iter = CharsWithPosition::new(Position::new(), text.chars().enumerate().peekable());
     let mut state: emphasis::State = emphasis::State::new();
     let mut table: table::State = table::State::new();
     loop {
         match iter.next() {
             Some(c) => {
-                pos.increment();
                 match c.1 {
                     '#' => {
-                        markdown::match_heading(&text, &mut tokens, &mut iter, &mut pos, c);
+                        markdown::match_heading(&text, &mut tokens, &mut iter, c);
                     },
                     '-' => {
                         match iter.peek() {
                             Some(v) => {
                                 match v.1 {
-                                    '-' => markdown::match_horizontalrule(text, &mut tokens, &mut iter, &mut pos, c),
-                                    ' ' => markdown::match_checkbutton(text, &mut tokens, &mut iter, &mut pos, c),
+                                    '-' => markdown::match_horizontalrule(text, &mut tokens, &mut iter, c),
+                                    ' ' => markdown::match_checkbutton(text, &mut tokens, &mut iter, c),
                                     _ => tokens.push(Token::new_single(TokenType::Text, c.0)),
                                 }
                             },
@@ -32,20 +31,20 @@ pub fn lex(text: &String) -> Vec<Token> {
                         }
                     },
                     '!' => {
-                        markdown::match_image(text, &mut tokens, &mut iter, &mut pos, c);
+                        markdown::match_image(text, &mut tokens, &mut iter, c);
                     },
                     '[' => {
-                        markdown::match_link(text, &mut tokens, &mut iter, &mut pos, c);
+                        markdown::match_link(text, &mut tokens, &mut iter, c);
                     },
                     '>' => {
-                        markdown::match_blockquote(text, &mut tokens, &mut iter, &mut pos, c);
+                        markdown::match_blockquote(text, &mut tokens, &mut iter, c);
                     },
                     '`' => {
                         match iter.peek() {
                             Some(v) => {
                                 match v.1 {
-                                    '`' => markdown::match_codeblock(text, &mut tokens, &mut iter, &mut pos, c),
-                                    _ => markdown::match_code(text, &mut tokens, &mut iter, &mut pos, c),
+                                    '`' => markdown::match_codeblock(text, &mut tokens, &mut iter, c),
+                                    _ => markdown::match_code(text, &mut tokens, &mut iter, c),
                                 }
                             },
                             None => tokens.push(Token::new_single(TokenType::Text, c.0)),
@@ -65,7 +64,6 @@ pub fn lex(text: &String) -> Vec<Token> {
                                         }
                                         tokens.push(Token::new_single(TokenType::Newline, v.0));
                                         iter.next();
-                                        pos.increment();
                                         match iter.peek() {
                                             Some(v) => match v.1 {
                                                 '|' => {
@@ -82,9 +80,8 @@ pub fn lex(text: &String) -> Vec<Token> {
                                     },
                                     '|' => {
                                         iter.next();
-                                        pos.increment();
                                         if table.possible_table {
-                                            let matched = markdown::match_table(&table, text, &mut tokens, &mut iter, &mut pos, c);
+                                            let matched = markdown::match_table(&table, text, &mut tokens, &mut iter, c);
                                             if matched {
                                                 table.in_table = true;
                                                 table.possible_table = false;
@@ -97,15 +94,13 @@ pub fn lex(text: &String) -> Vec<Token> {
                                     },
                                     ' ' => {
                                         iter.next();
-                                        pos.increment();
                                         match iter.peek() {
                                             Some(v) => {
                                                 match v.1 {
-                                                    ' ' => markdown::match_indentblock(text, &mut tokens, &mut iter, &mut pos, c),
+                                                    ' ' => markdown::match_indentblock(text, &mut tokens, &mut iter, c),
                                                     _ => {
                                                         tokens.push(Token::new_single(TokenType::Space, v.0));
                                                         iter.next();
-                                                        pos.increment();
                                                     },
                                                 }
                                             },
@@ -124,7 +119,7 @@ pub fn lex(text: &String) -> Vec<Token> {
                             },
                         }
                     },
-                    '*'|'~'|'_' => markdown::match_emphasis(&mut state, text, &mut tokens, &mut iter, &mut pos, c),
+                    '*'|'~'|'_' => markdown::match_emphasis(&mut state, text, &mut tokens, &mut iter, c),
                     '|' => tokens.push(Token::new_single(TokenType::Pipe, c.0)),
                     '\t' => tokens.push(Token::new_single(TokenType::Tab, c.0)),
                     '\\' => tokens.push(Token::new_single(TokenType::Escape, c.0)),
@@ -133,7 +128,7 @@ pub fn lex(text: &String) -> Vec<Token> {
             },
             None => {
                 if table.in_table {
-                    tokens.push(Token::new(TokenType::TableEnd, table.possible_table_start, pos.index));
+                    tokens.push(Token::new(TokenType::TableEnd, table.possible_table_start, iter.index()));
                     tokens.insert(table.table_index, Token::new_single(TokenType::TableBegin, table.possible_table_start));
                 }
                 break;
@@ -163,7 +158,7 @@ mod tests {
                 TokenType::Error => {
                     errors += 1;
                 },
-                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                TokenType::Text|TokenType::Space|TokenType::Newline => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
@@ -182,7 +177,7 @@ mod tests {
                 TokenType::Checkbutton(bool) => {
                     checkbuttons += 1;
                 },
-                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                TokenType::Text|TokenType::Space|TokenType::Newline => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
@@ -208,7 +203,7 @@ mod tests {
                 TokenType::Error => {
                     errors += 1;
                 },
-                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                TokenType::Text|TokenType::Space|TokenType::Newline => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
@@ -236,7 +231,7 @@ mod tests {
                 TokenType::Error => {
                     errors += 1;
                 },
-                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                TokenType::Text|TokenType::Space|TokenType::Newline => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
@@ -256,7 +251,7 @@ mod tests {
                 TokenType::HorizontalRule => {
                     hr += 1;
                 },
-                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                TokenType::Text|TokenType::Space|TokenType::Newline => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
@@ -278,7 +273,7 @@ mod tests {
                 TokenType::BlockquoteEnd => {
                     be += 1;
                 },
-                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                TokenType::Text|TokenType::Space|TokenType::Newline => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
@@ -297,7 +292,7 @@ mod tests {
                 TokenType::Code => {
                     code += 1;
                 },
-                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                TokenType::Text|TokenType::Space|TokenType::Newline => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
@@ -323,7 +318,7 @@ mod tests {
                 TokenType::CodeBlockLanguage => {
                     cbl += 1;
                 },
-                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                TokenType::Text|TokenType::Space|TokenType::Newline => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
@@ -343,7 +338,7 @@ mod tests {
                 TokenType::IndentBlock => {
                     indent += 1;
                 },
-                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                TokenType::Text|TokenType::Space|TokenType::Newline => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
@@ -361,7 +356,7 @@ mod tests {
                 TokenType::Escape => {
                     esc += 1;
                 },
-                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ')|TokenType::Heading
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Heading
                 |TokenType::ItalicBegin|TokenType::ItalicEnd|TokenType::BoldBegin|TokenType::BoldEnd
                 |TokenType::StrikeBegin|TokenType::StrikeEnd|TokenType::UnderlineBegin|TokenType::UnderlineEnd => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
@@ -393,7 +388,7 @@ mod tests {
                 TokenType::UnderlineBegin|TokenType::UnderlineEnd => {
                     u += 1;
                 },
-                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Whitespace(' ') => (),
+                TokenType::Text|TokenType::Space|TokenType::Newline => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }

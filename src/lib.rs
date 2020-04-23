@@ -11,6 +11,7 @@ mod markdown;
 mod lexer;
 mod parser;
 mod table;
+mod wrapper;
 
 pub use token::Token;
 pub use token::TokenType;

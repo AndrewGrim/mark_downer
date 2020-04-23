@@ -8,12 +8,16 @@ use crate::emphasis::Tag;
 use crate::emphasis;
 use crate::table::Alignment;
 use crate::table;
+use crate::lexer;
+use crate::wrapper::CharsWithPosition;
 
-pub fn match_heading(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+// TODO anywhere we need to verify indexes we must leave a comment
+// of why the index is as such
+
+pub fn match_heading(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
     if c.0 == 0 || &text[c.0 - 1..c.0] == "\n" {
         let mut heading_count: usize = 1;
         while let Some(v) = iter.next() {
-            pos.increment();
             match v.1 {
                 '#' => {
                     heading_count += 1;
@@ -28,7 +32,7 @@ pub fn match_heading(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Pe
                     break;
                 },
                 _ =>  {
-                    tokens.push(Token::new(TokenType::Text, c.0, pos.index));
+                    tokens.push(Token::new(TokenType::Text, c.0, iter.index()));
                     break;
                 },
             }
@@ -38,17 +42,15 @@ pub fn match_heading(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Pe
     }
 }
 
-pub fn match_checkbutton(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+pub fn match_checkbutton(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
     match text.get(c.0 + 2..c.0 + 6) {
         Some(v) => {
             if v == "[ ] " {
                 tokens.push(Token::new(TokenType::Checkbutton(false), c.0, c.0 + 5));
                 iter.nth(3);
-                pos.index += 4;
             } else if v == "[x] " {
                 tokens.push(Token::new(TokenType::Checkbutton(true), c.0, c.0 + 5));
                 iter.nth(3);
-                pos.index += 4;
             } else {
                 tokens.push(Token::new_single(TokenType::Text, c.0));
             }
@@ -57,16 +59,14 @@ pub fn match_checkbutton(text: &String, tokens: &mut Vec<Token>, iter: &mut iter
     }
 }
 
-pub fn match_image(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+pub fn match_image(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
     match iter.peek() {
         Some(v) => {
             match v.1 {
                 '[' => {
                     let alt_begin: usize = v.0 + 1;
                     iter.next();
-                    pos.increment();
                     while let Some(v) = iter.next() {
-                        pos.increment();
                         match v.1 {
                             ']' =>  {
                                 let alt_end: usize = v.0;
@@ -76,7 +76,6 @@ pub fn match_image(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peek
                                             '(' => {
                                                 let src_begin: usize = v.0 + 1;
                                                 while let Some(v) = iter.next() {
-                                                    pos.increment();
                                                     match v.1 {
                                                         ')' =>  {
                                                             tokens.push(Token::new(TokenType::ImageAlt, alt_begin, alt_end));
@@ -114,12 +113,11 @@ pub fn match_image(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peek
     }
 }
 
-pub fn match_link(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+pub fn match_link(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
     let text_begin: usize = c.0 + 1;
     loop {
         match iter.next() {
             Some(v) => {
-                pos.increment();
                 match v.1 {
                     ']' =>  {
                         let text_end: usize = v.0;
@@ -129,7 +127,6 @@ pub fn match_link(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peeka
                                     '(' => {
                                         let href_begin: usize = v.0 + 1;
                                         while let Some(v) = iter.next() {
-                                            pos.increment();
                                             match v.1 {
                                                 ')' =>  {
                                                     tokens.push(Token::new(TokenType::LinkHref, href_begin, v.0));
@@ -167,12 +164,10 @@ pub fn match_link(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peeka
     }
 }
 
-pub fn match_horizontalrule(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+pub fn match_horizontalrule(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
     iter.next();
-    pos.increment();
     match iter.next() {
         Some(v) => {
-            pos.increment();
             match v.1 {
                 '-' => {
                     match iter.peek() {
@@ -189,7 +184,6 @@ pub fn match_horizontalrule(text: &String, tokens: &mut Vec<Token>, iter: &mut i
                                 _ => tokens.push(Token::new(TokenType::Text, c.0, v.0 + 1)),
                             }
                             iter.next();
-                            pos.increment();
                         },
                         None => tokens.push(Token::new(TokenType::Text, c.0, v.0)),
                     }
@@ -201,36 +195,34 @@ pub fn match_horizontalrule(text: &String, tokens: &mut Vec<Token>, iter: &mut i
     }
 }
 
-pub fn match_blockquote(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+pub fn match_blockquote(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
     if c.0 == 0 || &text[c.0 - 1..c.0] == "\n" {
         tokens.push(Token::new_single(TokenType::BlockquoteBegin, c.0));
         loop {
             match iter.next() {
                 Some(v) => {
-                    pos.increment();
                     match v.1 {
                         '\n' => {
                             match iter.peek() {
                                 Some(v) => {
                                     match v.1 {
                                         '\n' => {
-                                            tokens.push(Token::new(TokenType::BlockquoteEnd, c.0, pos.index));
+                                            tokens.push(Token::new(TokenType::BlockquoteEnd, c.0, v.0 - 1));
                                             tokens.push(Token::new_single(TokenType::Newline, v.0));
                                             break;
                                         },
                                         _ => tokens.push(Token::new_single(TokenType::Text, v.0)),
                                     }
                                     iter.next();
-                                    pos.increment();
                                 },
-                                None => tokens.push(Token::new(TokenType::BlockquoteEnd, c.0, pos.index)),
+                                None => tokens.push(Token::new(TokenType::BlockquoteEnd, c.0, v.0)),
                             }
                         },
                         _ => tokens.push(Token::new_single(TokenType::Text, v.0)),
                     }
                 },
                 None => {
-                    tokens.push(Token::new(TokenType::BlockquoteEnd, c.0, pos.index));
+                    tokens.push(Token::new(TokenType::BlockquoteEnd, c.0, iter.last()));
                     break;
                 },
             }
@@ -240,12 +232,11 @@ pub fn match_blockquote(text: &String, tokens: &mut Vec<Token>, iter: &mut iter:
     }
 }
 
-pub fn match_code(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+pub fn match_code(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
     if c.0 == 0 || &text[c.0 - 1..c.0] != "`" {
         loop {
             match iter.next() {
                 Some(v) => {
-                    pos.increment();
                     match v.1 {
                         '`' => {
                             tokens.push(Token::new(TokenType::Code, c.0 + 1, v.0));
@@ -255,7 +246,7 @@ pub fn match_code(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peeka
                     }
                 },
                 None => {
-                    tokens.push(Token::new(TokenType::Text, c.0, pos.index));
+                    tokens.push(Token::new(TokenType::Text, c.0, iter.last()));
                     break;
                 },
             }
@@ -265,27 +256,24 @@ pub fn match_code(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peeka
     }
 }
 
-pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
     // TODO Perhaps when looking for closing backticks also check if the following characters is a newline.
     // And only then push a closing token.
     if c.0 == 0 || &text[c.0 - 1..c.0] == "\n" {
         iter.next();
-        pos.increment();
         match iter.peek() {
             Some(v) => {
-                let v = iter.next().unwrap();
-                pos.increment();
+                let v = iter.next().unwrap(); // TODO are we sure about this
                 match v.1 {
                     '`' =>{
-                        tokens.push(Token::new(TokenType::CodeBlockBegin, c.0, pos.index));
-                        let lang_begin: usize = pos.index;
+                        tokens.push(Token::new(TokenType::CodeBlockBegin, c.0, iter.index()));
+                        let lang_begin: usize = iter.index();
                         loop {
                             match iter.next() {
                                 Some(v) => {
-                                    pos.increment();
                                     match v.1 {
                                         '\n' => {
-                                            tokens.push(Token::new(TokenType::CodeBlockLanguage, lang_begin, pos.index));
+                                            tokens.push(Token::new(TokenType::CodeBlockLanguage, lang_begin, iter.index()));
                                             break;
                                         },
                                         _ => (),
@@ -294,21 +282,18 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::
                                 None => break,
                             }
                         }
-                        let lang_end: usize = pos.index;
+                        let lang_end: usize = iter.index();
                         loop {
                             match iter.next() {
                                 Some(v) => {
-                                    pos.increment();
                                     match v.1 {
                                         '`' => {
                                             match iter.next() {
                                                 Some(v) => {
-                                                    pos.increment();
                                                     match v.1 {
                                                         '`' => {
                                                             match iter.next() {
                                                                 Some(v) => {
-                                                                    pos.increment();
                                                                     match v.1 {
                                                                         '`' => {
                                                                             tokens.push(Token::new(TokenType::CodeBlockEnd, lang_end, v.0));
@@ -318,7 +303,7 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::
                                                                     }
                                                                 },
                                                                 None => {
-                                                                    tokens.push(Token::new(TokenType::Text, c.0, pos.index));
+                                                                    tokens.push(Token::new(TokenType::Text, c.0, iter.last()));
                                                                     break;
                                                                 },
                                                             }
@@ -327,7 +312,7 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::
                                                     }
                                                 },
                                                 None => {
-                                                    tokens.push(Token::new(TokenType::Text, c.0, pos.index));
+                                                    tokens.push(Token::new(TokenType::Text, c.0, iter.last()));
                                                     break;
                                                 },
                                             }
@@ -336,7 +321,7 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::
                                     }
                                 },
                                 None => {
-                                    tokens.push(Token::new(TokenType::Text, c.0, pos.index));
+                                    tokens.push(Token::new(TokenType::Text, c.0, iter.last() - 1)); // TODO check this out
                                     break;
                                 },
                             }
@@ -345,26 +330,24 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut iter::
                     _ => tokens.push(Token::new(TokenType::Text, c.0, v.0)),
                 }
             },
-            None => tokens.push(Token::new(TokenType::Text, c.0, pos.index)),
+            None => tokens.push(Token::new(TokenType::Text, c.0, iter.index())),
         }
     } else {
         tokens.push(Token::new_single(TokenType::Text, c.0));
     }
 }
 
-pub fn match_indentblock(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, mut pos: &mut Position, c: (usize, char)) {
+pub fn match_indentblock(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut CharsWithPosition, c: (usize, char)) {
     iter.next();
-    pos.increment();
-    if match_string(String::from("  "), text, &mut tokens, &mut iter, &mut pos, c) {
+    if match_string(String::from("  "), text, &mut tokens, &mut iter, c) {
         loop {
             match iter.next() {
                 Some(v) => {
-                    pos.increment();
                     match v.1 {
                         '\n' => {
-                            if !match_string(String::from("    "), text, &mut tokens, &mut iter, &mut pos, c) {
-                                tokens.push(Token::new(TokenType::IndentBlock, c.0, pos.index - 1));
-                                tokens.push(Token::new_single(TokenType::Text, pos.index - 1));
+                            if !match_string(String::from("    "), text, &mut tokens, &mut iter, c) {
+                                tokens.push(Token::new(TokenType::IndentBlock, c.0, iter.last())); // TODO why is this  - 1
+                                tokens.push(Token::new_single(TokenType::Text, iter.last())); // TODO why is this  - 1
                                 break;
                             } 
                         },
@@ -372,7 +355,7 @@ pub fn match_indentblock(text: &String, mut tokens: &mut Vec<Token>, mut iter: &
                     }
                 },
                 None => {
-                    tokens.push(Token::new(TokenType::Text, c.0, pos.index));
+                    tokens.push(Token::new(TokenType::Text, c.0, iter.last()));
                     break;
                 },
             }
@@ -380,7 +363,7 @@ pub fn match_indentblock(text: &String, mut tokens: &mut Vec<Token>, mut iter: &
     }
 }
 
-pub fn match_emphasis(mut state: &mut emphasis::State, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) {
+pub fn match_emphasis(mut state: &mut emphasis::State, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
     match c.1 {
         '*' => {
             match iter.peek() {
@@ -388,7 +371,6 @@ pub fn match_emphasis(mut state: &mut emphasis::State, text: &String, tokens: &m
                     match v.1 {
                         '*' => {
                             iter.next();
-                            pos.increment();
                             if state.bold == Tag::Bold(false) {
                                 tokens.push(Token::new_double(TokenType::BoldBegin, c.0));
                                 state.bold = Tag::Bold(true);
@@ -417,7 +399,6 @@ pub fn match_emphasis(mut state: &mut emphasis::State, text: &String, tokens: &m
                     match v.1 {
                         '~' => {
                             iter.next();
-                            pos.increment();
                             if state.strike == Tag::Strike(false) {
                                 tokens.push(Token::new_double(TokenType::StrikeBegin, c.0));
                                 state.strike = Tag::Strike(true);
@@ -438,7 +419,6 @@ pub fn match_emphasis(mut state: &mut emphasis::State, text: &String, tokens: &m
                     match v.1 {
                         '_' => {
                             iter.next();
-                            pos.increment();
                             if state.underline == Tag::Underline(false) {
                                 tokens.push(Token::new_double(TokenType::UnderlineBegin, c.0));
                                 state.underline = Tag::Underline(true);
@@ -457,7 +437,7 @@ pub fn match_emphasis(mut state: &mut emphasis::State, text: &String, tokens: &m
     }
 }
 
-pub fn match_table(table: &table::State, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) -> bool {
+pub fn match_table(table: &table::State, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) -> bool {
     // TODO verify index positions for errors and others 
     let mut index_start = c.0 + 2;
     let mut index_end = index_start + 4;
@@ -468,18 +448,15 @@ pub fn match_table(table: &table::State, text: &String, tokens: &mut Vec<Token>,
                 if v == " ---" || v == ":---" {
                     match iter.next() {
                         Some(v) => {
-                            pos.increment();
                             match v.1 {
                                 ' ' => _column_alignment = Alignment::LeftOrRight,
                                 ':' => _column_alignment = Alignment::LeftOrCenter,
                                 _ => panic!("In 'match_table()' found char other than accounted for!"),
                             }
                             iter.nth(2);
-                            pos.index += 3;
                             loop {
                                 match iter.next() {
                                     Some(v) => {
-                                        pos.increment();
                                         match v.1 {
                                             '-' => (),
                                             ':' => {
@@ -496,29 +473,28 @@ pub fn match_table(table: &table::State, text: &String, tokens: &mut Vec<Token>,
                                                 break;
                                             },
                                             _ => {
-                                                tokens.push(Token::new_single(TokenType::Error, pos.index));
+                                                tokens.push(Token::new_single(TokenType::Error, iter.index()));
                                                 return false;
                                             },
                                         }
                                     },
                                     None => {
                                         tokens.push(Token::new_single(TokenType::Text, c.0 + 1));
-                                        tokens.push(Token::new(TokenType::Text, c.0 + 2, pos.index));
+                                        tokens.push(Token::new(TokenType::Text, c.0 + 2, iter.last()));
                                         return false;
                                     },
                                 }
                             }
                             match iter.next() {
                                 Some(v) => {
-                                    pos.increment();
                                     match v.1 {
                                         '|' => {
                                             match _column_alignment {
-                                                Alignment::Left => tokens.insert(table.table_index, Token::new(TokenType::TableColumnLeft, index_start - 1, pos.index - 1)),
-                                                Alignment::Right => tokens.insert(table.table_index, Token::new(TokenType::TableColumnRight, index_start - 1, pos.index - 1)),
-                                                Alignment::Center => tokens.insert(table.table_index, Token::new(TokenType::TableColumnCenter, index_start - 1, pos.index - 1)),
+                                                Alignment::Left => tokens.insert(table.table_index, Token::new(TokenType::TableColumnLeft, index_start - 1, iter.last())), // TODO verify the indexes
+                                                Alignment::Right => tokens.insert(table.table_index, Token::new(TokenType::TableColumnRight, index_start - 1, iter.last())), // TODO verify the indexes
+                                                Alignment::Center => tokens.insert(table.table_index, Token::new(TokenType::TableColumnCenter, index_start - 1, iter.last())), // TODO verify the indexes
                                                 _ => {
-                                                    tokens.push(Token::new(TokenType::Error, index_start - 1, pos.index - 1));
+                                                    tokens.push(Token::new(TokenType::Error, index_start - 1, iter.last()));
                                                     return false;
                                                 },
                                             }
@@ -527,28 +503,27 @@ pub fn match_table(table: &table::State, text: &String, tokens: &mut Vec<Token>,
                                                     match v.1 {
                                                         '\n' => {
                                                             iter.next();
-                                                            pos.increment();
                                                             break;
                                                         },
                                                         ' '|':' => {
-                                                            index_start = pos.index;
+                                                            index_start = iter.index();
                                                             index_end = index_start + 4;
                                                             continue;
                                                         },
                                                         _ => {
-                                                            tokens.push(Token::new(TokenType::Error, c.0 + 1, pos.index - 1));
+                                                            tokens.push(Token::new(TokenType::Error, c.0 + 1, iter.last()));
                                                             return false;
                                                         },
                                                     }
                                                 },
                                                 None => {
-                                                    tokens.push(Token::new(TokenType::Error, c.0 + 1, pos.index - 1));
+                                                    tokens.push(Token::new(TokenType::Error, c.0 + 1, iter.last()));
                                                     return false;
                                                 },
                                             }
                                         },
                                         _ => {
-                                            tokens.push(Token::new(TokenType::Error, c.0 + 1, pos.index - 1));
+                                            tokens.push(Token::new(TokenType::Error, c.0 + 1, iter.last()));
                                             return false;
                                         },
                                     }
@@ -559,12 +534,12 @@ pub fn match_table(table: &table::State, text: &String, tokens: &mut Vec<Token>,
                         None => panic!("In 'match_table()' found None even though v matched correctly!"),
                     }
                 } else {
-                    tokens.push(Token::new_single(TokenType::Text, pos.index - 1));
+                    tokens.push(Token::new_single(TokenType::Text, iter.last()));
                     return false;
                 }
             },
             None => {
-                tokens.push(Token::new_single(TokenType::Text, pos.index - 1));
+                tokens.push(Token::new_single(TokenType::Text, iter.last()));
                 return false;
             },
         }
@@ -573,15 +548,15 @@ pub fn match_table(table: &table::State, text: &String, tokens: &mut Vec<Token>,
     true
 }
 
-pub fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter: &mut iter::Peekable<iter::Enumerate<str::Chars>>, pos: &mut Position, c: (usize, char)) -> bool {
+pub fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) -> bool {
     // TODO Utilize this function in other places in code.
     for ch in query.chars() {
-        match iter.next() {
+        match iter.peek() {
             Some(v) => {
-                pos.increment();
                 if v.1 != ch {
                     return false;
                 }
+                iter.next();
             },
             None => return false,
         }
