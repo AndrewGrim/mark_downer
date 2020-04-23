@@ -358,8 +358,9 @@ pub fn match_indentblock(text: &String, mut tokens: &mut Vec<Token>, mut iter: &
                     match v.1 {
                         '\n' => {
                             if !match_string(String::from("    "), text, &mut tokens, &mut iter, c) {
-                                tokens.push(Token::new(TokenType::IndentBlock, c.0, iter.last())); // TODO why is this  - 1
-                                tokens.push(Token::new_single(TokenType::Text, iter.last())); // TODO why is this  - 1
+                                // "c.0 + 1" Steps over the newline which is required to start an indented block.
+                                tokens.push(Token::new(TokenType::IndentBlock, c.0 + 1, iter.last()));
+                                tokens.push(Token::new_single(TokenType::Text, iter.last()));
                                 break;
                             } 
                         },
