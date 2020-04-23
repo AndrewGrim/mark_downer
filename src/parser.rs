@@ -205,7 +205,10 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                                         html.push(format!("{}</a>", text[tok.begin..tok.end].to_string()));
                                     }
                                 },
-                                TokenType::TableEnd => break,
+                                TokenType::TableEnd => {
+                                    html.push("</table>\n".to_string());
+                                    break;
+                                },
                                 TokenType::Code => html.push(format!("<code>{}</code>", text[n.begin..n.end].to_string())),
                                 TokenType::ItalicBegin => html.push("<i>".to_string()),
                                 TokenType::ItalicEnd => html.push("</i>".to_string()),
