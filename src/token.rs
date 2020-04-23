@@ -7,7 +7,6 @@ pub enum TokenType {
     Hash,
     Text,
     Error,
-    Whitespace(char), // TODO this can probably be removed, look at match_heading function.
     Checkbutton(bool),
     ImageAlt,
     ImageSrc,

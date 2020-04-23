@@ -243,7 +243,6 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
             TokenType::Text => html.push(text[t.begin..t.end].to_string()),
             TokenType::Space => html.push(text[t.begin..t.end].to_string()),
             TokenType::Tab => html.push(text[t.begin..t.end].to_string()),
-            TokenType::Whitespace(char) => html.push(text[t.begin..t.end].to_string()),
             _ => (),
         }
     }
