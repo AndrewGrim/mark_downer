@@ -2,4 +2,6 @@
 
 >this is a blockquote without a space
 
-<>blockquote
+>**this** *is* ~~a~~ __blockquote__ ~~with~~ **emphasis**
+
+<> not a blockquote

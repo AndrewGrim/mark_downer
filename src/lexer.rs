@@ -9,7 +9,7 @@ use crate::wrapper::CharsWithPosition;
 pub fn lex(text: &String) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::with_capacity(text.len());
     let mut iter = CharsWithPosition::new(Position::new(), text.chars().enumerate().peekable());
-    let mut state: emphasis::State = emphasis::State::new();
+    let mut emphasis: emphasis::State = emphasis::State::new();
     let mut table: table::State = table::State::new();
     loop {
         match iter.next() {
@@ -37,7 +37,7 @@ pub fn lex(text: &String) -> Vec<Token> {
                         markdown::match_link(text, &mut tokens, &mut iter, c);
                     },
                     '>' => {
-                        markdown::match_blockquote(text, &mut tokens, &mut iter, c);
+                        markdown::match_blockquote(&mut emphasis, text, &mut tokens, &mut iter, c);
                     },
                     '`' => {
                         match iter.peek() {
@@ -120,7 +120,7 @@ pub fn lex(text: &String) -> Vec<Token> {
                             },
                         }
                     },
-                    '*'|'~'|'_' => markdown::match_emphasis(&mut state, text, &mut tokens, &mut iter, c),
+                    '*'|'~'|'_' => markdown::match_emphasis(&mut emphasis, text, &mut tokens, &mut iter, c),
                     '|' => tokens.push(Token::new_single(TokenType::Pipe, c.0)),
                     '\t' => tokens.push(Token::new_single(TokenType::Tab, c.0)),
                     '\\' => tokens.push(Token::new_single(TokenType::Escape, c.0)),
@@ -274,12 +274,14 @@ mod tests {
                 TokenType::BlockquoteEnd => {
                     be += 1;
                 },
-                TokenType::Text|TokenType::Space|TokenType::Newline => (),
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::ItalicBegin
+                |TokenType::BoldBegin|TokenType::UnderlineBegin|TokenType::StrikeBegin
+                |TokenType::ItalicEnd|TokenType::BoldEnd|TokenType::UnderlineEnd|TokenType::StrikeEnd => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
-        assert!(bb == 2);
-        assert!(be == 2);
+        assert!(bb == 3);
+        assert!(be == 3);
 
         Ok(())
     }

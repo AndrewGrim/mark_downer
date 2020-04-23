@@ -197,7 +197,7 @@ pub fn match_horizontalrule(text: &String, tokens: &mut Vec<Token>, iter: &mut C
     }
 }
 
-pub fn match_blockquote(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
+pub fn match_blockquote(mut emphasis: &mut emphasis::State, text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut CharsWithPosition, c: (usize, char)) {
     if c.0 == 0 || &text[c.0 - 1..c.0] == "\n" {
         tokens.push(Token::new_single(TokenType::BlockquoteBegin, c.0));
         loop {
@@ -220,6 +220,7 @@ pub fn match_blockquote(text: &String, tokens: &mut Vec<Token>, iter: &mut Chars
                                 None => tokens.push(Token::new(TokenType::BlockquoteEnd, c.0, v.0)),
                             }
                         },
+                        '*'|'~'|'_' => match_emphasis(&mut emphasis, text, &mut tokens, &mut iter, v),
                         _ => tokens.push(Token::new_single(TokenType::Text, v.0)),
                     }
                 },
@@ -375,7 +376,7 @@ pub fn match_indentblock(text: &String, mut tokens: &mut Vec<Token>, mut iter: &
     }
 }
 
-pub fn match_emphasis(mut state: &mut emphasis::State, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
+pub fn match_emphasis(mut emphasis: &mut emphasis::State, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
     match c.1 {
         '*' => {
             match iter.peek() {
@@ -383,21 +384,21 @@ pub fn match_emphasis(mut state: &mut emphasis::State, text: &String, tokens: &m
                     match v.1 {
                         '*' => {
                             iter.next();
-                            if state.bold == Tag::Bold(false) {
+                            if emphasis.bold == Tag::Bold(false) {
                                 tokens.push(Token::new_double(TokenType::BoldBegin, c.0));
-                                state.bold = Tag::Bold(true);
+                                emphasis.bold = Tag::Bold(true);
                             } else {
                                 tokens.push(Token::new_double(TokenType::BoldEnd, c.0));
-                                state.bold = Tag::Bold(false);
+                                emphasis.bold = Tag::Bold(false);
                             }
                         },
                         _ => {
-                            if state.italic == Tag::Italic(false) {
+                            if emphasis.italic == Tag::Italic(false) {
                                 tokens.push(Token::new_single(TokenType::ItalicBegin, c.0));
-                                state.italic = Tag::Italic(true);
+                                emphasis.italic = Tag::Italic(true);
                             } else {
                                 tokens.push(Token::new_single(TokenType::ItalicEnd, c.0));
-                                state.italic = Tag::Italic(false);
+                                emphasis.italic = Tag::Italic(false);
                             }
                         },
                     }
@@ -411,12 +412,12 @@ pub fn match_emphasis(mut state: &mut emphasis::State, text: &String, tokens: &m
                     match v.1 {
                         '~' => {
                             iter.next();
-                            if state.strike == Tag::Strike(false) {
+                            if emphasis.strike == Tag::Strike(false) {
                                 tokens.push(Token::new_double(TokenType::StrikeBegin, c.0));
-                                state.strike = Tag::Strike(true);
+                                emphasis.strike = Tag::Strike(true);
                             } else {
                                 tokens.push(Token::new_double(TokenType::StrikeEnd, c.0));
-                                state.strike = Tag::Strike(false);
+                                emphasis.strike = Tag::Strike(false);
                             }
                         },
                         _ => tokens.push(Token::new_single(TokenType::Text, c.0)),
@@ -431,12 +432,12 @@ pub fn match_emphasis(mut state: &mut emphasis::State, text: &String, tokens: &m
                     match v.1 {
                         '_' => {
                             iter.next();
-                            if state.underline == Tag::Underline(false) {
+                            if emphasis.underline == Tag::Underline(false) {
                                 tokens.push(Token::new_double(TokenType::UnderlineBegin, c.0));
-                                state.underline = Tag::Underline(true);
+                                emphasis.underline = Tag::Underline(true);
                             } else {
                                 tokens.push(Token::new_double(TokenType::UnderlineEnd, c.0));
-                                state.underline = Tag::Underline(false);
+                                emphasis.underline = Tag::Underline(false);
                             }
                         },
                         _ => tokens.push(Token::new_single(TokenType::Text, c.0)),

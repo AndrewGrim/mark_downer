@@ -54,15 +54,22 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                 }
             },
             TokenType::BlockquoteBegin => {
+                html.push("<blockquote>".to_string());
                 while let Some(tok) = iter.peek() {
                     match tok.id {
-                        TokenType::Text => {iter.next();},
-                        TokenType::BlockquoteEnd => {
-                            html.push(format!("<blockquote>{}</blockquote>", text[tok.begin + 1..tok.end - 1].to_string()));
-                            iter.next();
-                        },
+                        TokenType::Text => html.push(text[tok.begin..tok.end].to_string()),
+                        TokenType::BlockquoteEnd => html.push("</blockquote>".to_string()),
+                        TokenType::ItalicBegin => html.push("<i>".to_string()),
+                        TokenType::ItalicEnd => html.push("</i>".to_string()),
+                        TokenType::BoldBegin => html.push("<b>".to_string()),
+                        TokenType::BoldEnd => html.push("</b>".to_string()),
+                        TokenType::StrikeBegin => html.push("<strike>".to_string()),
+                        TokenType::StrikeEnd => html.push("</strike>".to_string()),
+                        TokenType::UnderlineBegin => html.push("<u>".to_string()),
+                        TokenType::UnderlineEnd => html.push("</u>".to_string()),
                         _ => break,
                     }
+                    iter.next();
                 }
                 match iter.peek() {
                     Some(n) => {
