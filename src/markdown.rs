@@ -207,7 +207,7 @@ pub fn match_blockquote(text: &String, tokens: &mut Vec<Token>, iter: &mut Chars
                                 Some(v) => {
                                     match v.1 {
                                         '\n' => {
-                                            tokens.push(Token::new(TokenType::BlockquoteEnd, c.0, v.0 - 1));
+                                            tokens.push(Token::new(TokenType::BlockquoteEnd, c.0, v.0));
                                             tokens.push(Token::new_single(TokenType::Newline, v.0));
                                             break;
                                         },
