@@ -257,13 +257,12 @@ pub fn match_code(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPo
 }
 
 pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
-    // TODO Perhaps when looking for closing backticks also check if the following characters is a newline.
-    // And only then push a closing token.
     if c.0 == 0 || &text[c.0 - 1..c.0] == "\n" {
         iter.next();
         match iter.peek() {
             Some(v) => {
-                let v = iter.next().unwrap(); // TODO are we sure about this
+                // ".unwrap()" Is safe here because peek already matched "Some()" value.
+                let v = iter.next().unwrap();
                 match v.1 {
                     '`' =>{
                         tokens.push(Token::new(TokenType::CodeBlockBegin, c.0, iter.index()));
@@ -296,8 +295,19 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                                                                 Some(v) => {
                                                                     match v.1 {
                                                                         '`' => {
-                                                                            tokens.push(Token::new(TokenType::CodeBlockEnd, lang_end, v.0));
-                                                                            break;
+                                                                            match iter.peek() {
+                                                                                Some(v) => match v.1 {
+                                                                                    '\n' => {
+                                                                                        // "iter.index() - 1" Because we dont want to include the "```" in the codeblock.
+                                                                                        tokens.push(Token::new(TokenType::CodeBlockEnd, lang_end, iter.index() - 1));
+                                                                                        iter.next();
+                                                                                        tokens.push(Token::new_single(TokenType::Newline, iter.index()));
+                                                                                        break;
+                                                                                    },
+                                                                                    _ => (),
+                                                                                },
+                                                                                None => tokens.push(Token::new(TokenType::Text, c.0, iter.last())),
+                                                                            }
                                                                         },
                                                                         _ => (),
                                                                     }
@@ -321,7 +331,7 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                                     }
                                 },
                                 None => {
-                                    tokens.push(Token::new(TokenType::Text, c.0, iter.last() - 1)); // TODO check this out
+                                    tokens.push(Token::new(TokenType::Text, c.0, iter.last()));
                                     break;
                                 },
                             }

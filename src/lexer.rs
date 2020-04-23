@@ -323,8 +323,8 @@ mod tests {
             }
         }
         assert!(cbb == 3);
+        assert!(cbl == 3);
         assert!(cbe == 2);
-        assert!(cbl == 2);
 
         Ok(())
     }
