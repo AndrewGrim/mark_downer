@@ -84,6 +84,7 @@ pub fn match_image(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithP
                                                         },
                                                         '\n' => {
                                                             tokens.push(Token::new(TokenType::Error, c.0, v.0));
+                                                            tokens.push(Token::new_single(TokenType::Newline, v.0));
                                                             break;
                                                         },
                                                         _ => (),
@@ -135,6 +136,7 @@ pub fn match_link(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPo
                                                 },
                                                 '\n' => {
                                                     tokens.push(Token::new(TokenType::Error, c.0, v.0));
+                                                    tokens.push(Token::new_single(TokenType::Newline, v.0));
                                                     break;
                                                 },
                                                 _ => (),
