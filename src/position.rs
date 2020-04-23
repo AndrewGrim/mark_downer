@@ -6,7 +6,15 @@ pub struct Position {
 }
 
 impl Position {
-    pub fn new(index: usize, line: usize, line_offset: usize) -> Position {
+    pub fn new() -> Position {
+        Position {
+            index: 0,
+            line: 0,
+            line_offset: 0,
+        }
+    }
+
+    pub fn new_at(index: usize, line: usize, line_offset: usize) -> Position {
         Position {
             index,
             line,
