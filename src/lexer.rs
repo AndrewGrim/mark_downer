@@ -543,16 +543,75 @@ mod tests {
         Ok(())
     }
 
-    // #[test]
-    // fn list() -> Result<(), io::Error> {
-    //     let t = lex(&fs::read_to_string("tests/list.md")?);
-    //     for token in t.iter() {
-    //         match token.id {
-    //             TokenType::Text|TokenType::Space|TokenType::Newline => (),
-    //             _ => panic!(format!("Encounterd TokenType other than expected! {:#?}", token)),
-    //         }
-    //     }
+    #[test]
+    fn list() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/list.md")?);
+        let mut ulb: usize = 0;
+        let mut ule: usize = 0;
+        let mut olb: usize = 0;
+        let mut ole: usize = 0;
+        let mut lib: usize = 0;
+        let mut lie: usize = 0;
 
-    //     Ok(())
-    // }
+        let mut ib: usize = 0;
+        let mut ie: usize = 0;
+        let mut bb: usize = 0;
+        let mut be: usize = 0;
+        let mut sb: usize = 0;
+        let mut se: usize = 0;
+        let mut ub: usize = 0;
+        let mut ue: usize = 0;
+
+        let mut lh: usize = 0;
+        let mut lt: usize = 0;
+        let mut ct: usize = 0;
+        let mut cf: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::UnorderedListBegin => ulb += 1,
+                TokenType::UnorderedListEnd => ule += 1,
+                TokenType::OrderedListBegin => olb += 1,
+                TokenType::OrderedListEnd => ole += 1,
+                TokenType::ListItemBegin => lib += 1,
+                TokenType::ListItemEnd => lie += 1,
+
+                TokenType::ItalicBegin => ib += 1,
+                TokenType::ItalicEnd => ie += 1,
+                TokenType::BoldBegin => bb += 1,
+                TokenType::BoldEnd => be += 1,
+                TokenType::StrikeBegin => sb += 1,
+                TokenType::StrikeEnd => se += 1,
+                TokenType::UnderlineBegin => ub += 1,
+                TokenType::UnderlineEnd => ue += 1,
+                
+                TokenType::LinkHref => lh += 1,
+                TokenType::LinkText => lt += 1,
+                TokenType::Checkbutton(true) => ct += 1,
+                TokenType::Checkbutton(false) => cf += 1,
+                _ => (),
+            }
+        }
+        assert!(ulb == 7);
+        assert!(ule == 7);
+        assert!(olb == 3);
+        assert!(ole == 3);
+        assert!(lib == 18);
+        assert!(lie == 18); 
+
+        assert!(ib == 2);
+        assert!(ie == 2);
+        assert!(bb == 2);
+        assert!(be == 2);
+        assert!(sb == 2);
+        assert!(se == 2);
+        assert!(ub == 2);
+        assert!(ue == 2);
+
+        assert!(lh == 3);
+        assert!(lt == 3);
+        assert!(ct == 1);
+        assert!(cf == 1);
+
+        Ok(())
+    }
 }
