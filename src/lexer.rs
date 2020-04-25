@@ -109,7 +109,6 @@ pub fn lex(text: &String) -> Vec<Token> {
                                             None => tokens.push(Token::new_single(TokenType::Space, c.0)),
                                         }
                                     },
-                                    // TODO add support for ordered list
                                     '*' => {
                                         iter.next();
                                         if let Some(v) = iter.peek() {
@@ -121,14 +120,39 @@ pub fn lex(text: &String) -> Vec<Token> {
                                                     &mut iter,
                                                     (c.0 + 1, '_')
                                                 ),
-                                                '\n' => tokens.push(Token::new_single(TokenType::Text, iter.index())),
+                                                '\n' => (),
                                                 // "c.0 + 1" To step over opening newline.
                                                 _ => markdown::match_emphasis(&mut emphasis, text, &mut tokens, &mut iter, (c.0 + 1, '*')),
                                             }
                                         } else {
                                             tokens.push(Token::new_single(TokenType::Text, iter.index()));
                                         }
-                                    }
+                                    },
+                                    '1' => {
+                                        iter.next();
+                                        if let Some(v) = iter.peek() {
+                                            match v.1 {
+                                                '.' => {
+                                                    iter.next();
+                                                    if let Some(v) = iter.peek() {
+                                                        match v.1 {
+                                                            ' ' => markdown::match_list(
+                                                                wrapper::ListType(TokenType::OrderedListBegin, TokenType::OrderedListEnd),
+                                                                text,
+                                                                &mut tokens,
+                                                                &mut iter,
+                                                                (c.0 + 1, '_')
+                                                            ),
+                                                            '\n' => (),
+                                                            _ => tokens.push(Token::new_single(TokenType::Text, iter.index())),
+                                                        }
+                                                    }
+                                                },
+                                                '\n' => (),
+                                                _ => tokens.push(Token::new_single(TokenType::Text, iter.index())),
+                                            }
+                                        }
+                                    },
                                     _ => (),
                                 }
                             },

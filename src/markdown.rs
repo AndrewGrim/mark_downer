@@ -606,7 +606,7 @@ pub fn match_list(list_type: wrapper::ListType, text: &String, mut tokens: &mut 
                             iter.next();
                             if let Some(v) = iter.peek() {
                                 match v.1 {
-                                    '.'|')' => {
+                                    '.' => {
                                         iter.next();
                                         if let Some(v) = iter.peek() {
                                             match v.1 {
@@ -647,27 +647,53 @@ pub fn match_list(list_type: wrapper::ListType, text: &String, mut tokens: &mut 
                                                 if let Some(v) = iter.peek() {
                                                     match v.1 {
                                                         ' ' => {
-                                                            // TODO check somewhere here if the last list was a different type then close it
-                                                            if lists[lists.len() - 1].1 > current_indent {
-                                                                // DONT! check until you hit a list with the same indent instead!
-                                                                // TODO for ordered lists
-                                                                let l = lists.pop().unwrap(); // panic??
-                                                                tokens.push(Token::new_single(l.0, iter.index()));
-                                                                tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
-                                                            } else if lists[lists.len() - 1].1 == current_indent {
-                                                                tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
-                                                            } else {
-                                                                tokens.push(Token::new_double(TokenType::UnorderedListBegin, iter.index()));
-                                                                lists.push(wrapper::List(TokenType::UnorderedListEnd, current_indent));
-                                                                tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
-                                                            }
-                                                            iter.next();
+                                                            push_indented_list(
+                                                                current_indent,
+                                                                wrapper::ListType(TokenType::UnorderedListBegin, TokenType::UnorderedListEnd),
+                                                                &mut lists,
+                                                                tokens, 
+                                                                iter
+                                                            );
                                                             break;
                                                         },
                                                         _ => {
                                                             tokens.push(Token::new_double(TokenType::Error, iter.last()));
                                                             iter.next();
                                                             break;
+                                                        },
+                                                    }
+                                                }
+                                            },
+                                            '1' => {
+                                                let current_indent = v.0 - indent_begin;
+                                                iter.next();
+                                                if let Some(v) = iter.peek() {
+                                                    match v.1 {
+                                                        '.' => {
+                                                            iter.next();
+                                                            if let Some(v) = iter.peek() {
+                                                                match v.1 {
+                                                                    ' ' => {
+                                                                        push_indented_list(
+                                                                            current_indent,
+                                                                            wrapper::ListType(TokenType::OrderedListBegin, TokenType::OrderedListEnd),
+                                                                            &mut lists,
+                                                                            tokens, 
+                                                                            iter
+                                                                        );
+                                                                        break;
+                                                                    },
+                                                                    _ => {
+                                                                        tokens.push(Token::new_double(TokenType::Error, iter.last()));
+                                                                        iter.next();
+                                                                        break;
+                                                                    },
+                                                                }
+                                                            }
+                                                        },
+                                                        _ => {
+                                                            tokens.push(Token::new_double(TokenType::Error, iter.last()));
+                                                            iter.next();
                                                         },
                                                     }
                                                 }
@@ -722,6 +748,36 @@ fn push_list(list_type: wrapper::ListType, lists: &mut Vec<wrapper::List>, token
             iter.next();
             tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
         }
+    }
+}
+
+fn push_indented_list(current_indent: usize, list_type: wrapper::ListType, lists: &mut Vec<wrapper::List>, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition) {
+    if lists[lists.len() - 1].1 > current_indent {
+        let l = lists.pop().unwrap();
+        tokens.push(Token::new_single(l.0, iter.index()));
+        if lists[lists.len() - 1].0 == list_type.1 {
+            tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+            iter.next();
+        } else {
+            tokens.push(Token::new_double(list_type.0, iter.index()));
+            lists.push(wrapper::List(list_type.1, 0));
+            iter.next();
+            tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+        }
+    } else if lists[lists.len() - 1].1 == current_indent {
+        if lists[lists.len() - 1].0 == list_type.1 {
+            tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+            iter.next();
+        } else {
+            tokens.push(Token::new_double(list_type.0, iter.index()));
+            lists.push(wrapper::List(list_type.1, 0));
+            iter.next();
+            tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+        }
+    } else {
+        tokens.push(Token::new_double(list_type.0, iter.index()));
+        lists.push(wrapper::List(list_type.1, current_indent));
+        tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
     }
 }
 
