@@ -715,6 +715,7 @@ pub fn match_list(list_type: wrapper::ListType, text: &String, mut tokens: &mut 
             },
             '*'|'~'|'_' => match_emphasis(&mut emphasis, text, &mut tokens, &mut iter, v),
             '[' => match_link(text, &mut tokens, &mut iter, v),
+            '-' => match_checkbutton(text, &mut tokens, &mut iter, v),
             _ => tokens.push(Token::new_single(TokenType::Text, iter.last())), // TODO why is last() the correct thing to do here?
         }
     }
