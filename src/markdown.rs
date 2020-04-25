@@ -1,19 +1,11 @@
-use std::iter;
-use std::str;
-
-use crate::position::Position;
 use crate::token::Token;
 use crate::token::TokenType;
 use crate::emphasis::Tag;
 use crate::emphasis;
 use crate::table::Alignment;
 use crate::table;
-use crate::lexer;
 use crate::wrapper;
 use crate::wrapper::CharsWithPosition;
-
-// TODO anywhere we need to verify indexes we must leave a comment
-// of why the index is as such
 
 pub fn match_heading(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
     if c.0 == 0 || &text[c.0 - 1..c.0] == "\n" {
@@ -353,13 +345,13 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
 
 pub fn match_indentblock(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut CharsWithPosition, c: (usize, char)) {
     iter.next();
-    if match_string(String::from("  "), text, &mut tokens, &mut iter, c) {
+    if match_string(String::from("  "), text, &mut tokens, &mut iter) {
         loop {
             match iter.next() {
                 Some(v) => {
                     match v.1 {
                         '\n' => {
-                            if !match_string(String::from("    "), text, &mut tokens, &mut iter, c) {
+                            if !match_string(String::from("    "), text, &mut tokens, &mut iter) {
                                 // "c.0 + 1" Steps over the newline which is required to start an indented block.
                                 tokens.push(Token::new(TokenType::IndentBlock, c.0 + 1, iter.last()));
                                 break;
@@ -634,7 +626,7 @@ pub fn match_list(list_type: wrapper::ListType, text: &String, mut tokens: &mut 
                         },
                         ' ' => {
                             loop {
-                                if !match_string(String::from("    "), text, &mut tokens, &mut iter, c) {
+                                if !match_string(String::from("    "), text, &mut tokens, &mut iter) {
                                     tokens.push(Token::new(TokenType::Error, indent_begin, iter.index()));
                                     break;
                                 } else {
@@ -725,7 +717,7 @@ pub fn match_list(list_type: wrapper::ListType, text: &String, mut tokens: &mut 
 fn push_list(list_type: wrapper::ListType, lists: &mut Vec<wrapper::List>, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition) {
     if lists[lists.len() - 1].1 > 0 {
         for i in (1..lists.len()).rev() {
-            if lists[i].1 != 0 {
+            if lists[i].1 != 0 || lists[i].0 != list_type.1 {
                 let l = lists.pop().unwrap();
                 tokens.push(Token::new_single(l.0, iter.index()));
             }
@@ -783,9 +775,8 @@ fn push_indented_list(current_indent: usize, list_type: wrapper::ListType, lists
     }
 }
 
-pub fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) -> bool {
+pub fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition) -> bool {
     // TODO Utilize this function in other places in code.
-    // TODO remove c for this fucntion
     for ch in query.chars() {
         match iter.peek() {
             Some(v) => {

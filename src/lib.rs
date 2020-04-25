@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-#![allow(dead_code, unused_imports, unused_variables)] // TODO remove this once ready
+#![allow(dead_code, unused_variables)] // TODO remove this once ready
 
 use std::fs;
 use std::io;

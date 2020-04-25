@@ -1,5 +1,3 @@
-use crate::token;
-
 #[derive(Debug, PartialEq)]
 pub enum Alignment {
     Left,
