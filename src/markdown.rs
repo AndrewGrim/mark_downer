@@ -562,10 +562,10 @@ pub fn match_table(table: &table::State, text: &String, tokens: &mut Vec<Token>,
     true
 }
 
-pub fn match_list(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut CharsWithPosition, c: (usize, char)) {
+pub fn match_list(list_type: wrapper::ListType, text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut CharsWithPosition, c: (usize, char)) {
     let mut lists: Vec<wrapper::List> = Vec::with_capacity(10);
-    tokens.push(Token::new_double(TokenType::UnorderedListBegin, iter.index()));
-    lists.push(wrapper::List(TokenType::UnorderedListEnd, 0));
+    tokens.push(Token::new_double(list_type.0, iter.index()));
+    lists.push(wrapper::List(list_type.1, 0));
     iter.next();
     tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
     let mut emphasis = emphasis::State::new();
@@ -588,20 +588,47 @@ pub fn match_list(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut Cha
                             if let Some(v) = iter.peek() {
                                 match v.1 {
                                     ' ' => {
-                                        if lists[lists.len() - 1].1 > 0 {
-                                            // DONT! check until you hit a list with indent 0 instead!
-                                            // TODO for ordered lists
-                                            for i in (1..lists.len()).rev() { 
-                                                let l = lists.pop().unwrap();
-                                                tokens.push(Token::new_single(l.0, iter.index()));
-                                            }
-                                            tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
-                                        } else {
-                                            tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
-                                        }
+                                        push_list(
+                                            wrapper::ListType(TokenType::UnorderedListBegin, TokenType::UnorderedListEnd),
+                                            &mut lists,
+                                            tokens, 
+                                            iter
+                                        );
+                                    },
+                                    _ => {
+                                        tokens.push(Token::new_double(TokenType::Error, iter.last()));
                                         iter.next();
                                     },
-                                    _ => tokens.push(Token::new_double(TokenType::Error, iter.index())), // maybe last
+                                }
+                            }
+                        },
+                        '1' => {
+                            iter.next();
+                            if let Some(v) = iter.peek() {
+                                match v.1 {
+                                    '.'|')' => {
+                                        iter.next();
+                                        if let Some(v) = iter.peek() {
+                                            match v.1 {
+                                                ' ' => {
+                                                    push_list(
+                                                        wrapper::ListType(TokenType::OrderedListBegin, TokenType::OrderedListEnd),
+                                                        &mut lists,
+                                                        tokens, 
+                                                        iter
+                                                    );
+                                                },
+                                                _ => {
+                                                    tokens.push(Token::new_double(TokenType::Error, iter.last()));
+                                                    iter.next();
+                                                },
+                                            }
+                                        }
+                                    },
+                                    _ => {
+                                        tokens.push(Token::new_double(TokenType::Error, iter.last()));
+                                        iter.next();
+                                    },
                                 }
                             }
                         },
@@ -620,6 +647,7 @@ pub fn match_list(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut Cha
                                                 if let Some(v) = iter.peek() {
                                                     match v.1 {
                                                         ' ' => {
+                                                            // TODO check somewhere here if the last list was a different type then close it
                                                             if lists[lists.len() - 1].1 > current_indent {
                                                                 // DONT! check until you hit a list with the same indent instead!
                                                                 // TODO for ordered lists
@@ -636,7 +664,11 @@ pub fn match_list(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut Cha
                                                             iter.next();
                                                             break;
                                                         },
-                                                        _ => tokens.push(Token::new_double(TokenType::Error, iter.index())), // maybe last
+                                                        _ => {
+                                                            tokens.push(Token::new_double(TokenType::Error, iter.last()));
+                                                            iter.next();
+                                                            break;
+                                                        },
                                                     }
                                                 }
                                             },
@@ -646,7 +678,10 @@ pub fn match_list(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut Cha
                                 }
                             }
                         },
-                        _ => tokens.push(Token::new_single(TokenType::Error, v.0)), 
+                        _ => {
+                            tokens.push(Token::new_single(TokenType::Error, iter.index()));
+                            iter.next();
+                        },
                     }
                 } else {
                     tokens.push(Token::new_single(TokenType::Newline, iter.last()));
@@ -658,6 +693,36 @@ pub fn match_list(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut Cha
         }
     }
     // maybe push token
+}
+
+fn push_list(list_type: wrapper::ListType, lists: &mut Vec<wrapper::List>, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition) {
+    if lists[lists.len() - 1].1 > 0 {
+        for i in (1..lists.len()).rev() {
+            if lists[i].1 != 0 {
+                let l = lists.pop().unwrap();
+                tokens.push(Token::new_single(l.0, iter.index()));
+            }
+        }
+        if lists[lists.len() - 1].0 == list_type.1 {
+            tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+            iter.next();
+        } else {
+            tokens.push(Token::new_double(list_type.0, iter.index()));
+            lists.push(wrapper::List(list_type.1, 0));
+            iter.next();
+            tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+        }
+    } else {
+        if lists[lists.len() - 1].0 == list_type.1 {
+            tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+            iter.next();
+        } else {
+            tokens.push(Token::new_double(list_type.0, iter.index()));
+            lists.push(wrapper::List(list_type.1, 0));
+            iter.next();
+            tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+        }
+    }
 }
 
 pub fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) -> bool {

@@ -4,6 +4,7 @@ use crate::position::Position;
 use crate::emphasis;
 use crate::markdown;
 use crate::table;
+use crate::wrapper;
 use crate::wrapper::CharsWithPosition;
 
 pub fn lex(text: &String) -> Vec<Token> {
@@ -108,11 +109,18 @@ pub fn lex(text: &String) -> Vec<Token> {
                                             None => tokens.push(Token::new_single(TokenType::Space, c.0)),
                                         }
                                     },
+                                    // TODO add support for ordered list
                                     '*' => {
                                         iter.next();
                                         if let Some(v) = iter.peek() {
                                             match v.1 {
-                                                ' ' => markdown::match_list(text, &mut tokens, &mut iter, (c.0 + 1, '_')),
+                                                ' ' => markdown::match_list(
+                                                    wrapper::ListType(TokenType::UnorderedListBegin, TokenType::UnorderedListEnd),
+                                                    text,
+                                                    &mut tokens,
+                                                    &mut iter,
+                                                    (c.0 + 1, '_')
+                                                ),
                                                 '\n' => tokens.push(Token::new_single(TokenType::Text, iter.index())),
                                                 // "c.0 + 1" To step over opening newline.
                                                 _ => markdown::match_emphasis(&mut emphasis, text, &mut tokens, &mut iter, (c.0 + 1, '*')),

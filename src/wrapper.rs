@@ -43,3 +43,6 @@ impl<'a> CharsWithPosition<'a> {
 
 #[derive(Debug)]
 pub struct List(pub token::TokenType, pub usize);
+
+#[derive(Debug)]
+pub struct ListType(pub token::TokenType, pub token::TokenType);
