@@ -36,6 +36,12 @@ pub enum TokenType {
     TableColumnLeft,
     TableColumnRight,
     TableColumnCenter,
+    UnorderedListBegin,
+    UnorderedListEnd,
+    OrderedListBegin,
+    OrderedListEnd,
+    ListItemBegin,
+    ListItemEnd,
 }
 
 #[derive(Debug, PartialEq)]

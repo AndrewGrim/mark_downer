@@ -2,6 +2,7 @@ use std::iter;
 use std::str;
 
 use crate::position;
+use crate::token;
 
 #[derive(Debug)]
 pub struct CharsWithPosition<'a> {
@@ -39,3 +40,6 @@ impl<'a> CharsWithPosition<'a> {
         self.pos.index - 1
     }
 }
+
+#[derive(Debug)]
+pub struct List(pub token::TokenType, pub usize);

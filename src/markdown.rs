@@ -9,6 +9,7 @@ use crate::emphasis;
 use crate::table::Alignment;
 use crate::table;
 use crate::lexer;
+use crate::wrapper;
 use crate::wrapper::CharsWithPosition;
 
 // TODO anywhere we need to verify indexes we must leave a comment
@@ -559,6 +560,39 @@ pub fn match_table(table: &table::State, text: &String, tokens: &mut Vec<Token>,
     }
 
     true
+}
+
+pub fn match_list(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut CharsWithPosition, c: (usize, char)) {
+    let mut lists: Vec<wrapper::List> = Vec::with_capacity(10);
+    tokens.push(Token::new_double(TokenType::UnorderedListBegin, iter.index()));
+    lists.push(wrapper::List(TokenType::UnorderedListEnd, 0));
+    iter.next();
+    tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+    let mut emphasis = emphasis::State::new();
+    while let Some(v) = iter.next() {
+        match v.1 {
+            '\n' => {
+                if let Some(v) = iter.peek() {
+                    match v.1 {
+                        '\n' => {
+                            for i in (0..lists.len()).rev() {
+                                let l = lists.pop().unwrap();
+                                tokens.push(Token::new_single(l.0, iter.index()));
+                            }
+                            break;
+                        },
+                        _ => (), // TODO check indentation and list item begin
+                    }
+                } else {
+                    tokens.push(Token::new_single(TokenType::Newline, iter.last()));
+                }
+            },
+            '*'|'~'|'_' => match_emphasis(&mut emphasis, text, &mut tokens, &mut iter, c),
+            '[' => match_link(text, &mut tokens, &mut iter, c),
+            _ => tokens.push(Token::new_single(TokenType::Text, iter.last())), // TODO why is last() the correct thing to do here?
+        }
+    }
+    // maybe push token
 }
 
 pub fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) -> bool {

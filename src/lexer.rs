@@ -108,6 +108,19 @@ pub fn lex(text: &String) -> Vec<Token> {
                                             None => tokens.push(Token::new_single(TokenType::Space, c.0)),
                                         }
                                     },
+                                    '*' => {
+                                        iter.next();
+                                        if let Some(v) = iter.peek() {
+                                            match v.1 {
+                                                ' ' => markdown::match_list(text, &mut tokens, &mut iter, (c.0 + 1, '_')),
+                                                '\n' => tokens.push(Token::new_single(TokenType::Text, iter.index())),
+                                                // "c.0 + 1" To step over opening newline.
+                                                _ => markdown::match_emphasis(&mut emphasis, text, &mut tokens, &mut iter, (c.0 + 1, '*')),
+                                            }
+                                        } else {
+                                            tokens.push(Token::new_single(TokenType::Text, iter.index()));
+                                        }
+                                    }
                                     _ => (),
                                 }
                             },
@@ -497,4 +510,17 @@ mod tests {
         
         Ok(())
     }
+
+    // #[test]
+    // fn list() -> Result<(), io::Error> {
+    //     let t = lex(&fs::read_to_string("tests/list.md")?);
+    //     for token in t.iter() {
+    //         match token.id {
+    //             TokenType::Text|TokenType::Space|TokenType::Newline => (),
+    //             _ => panic!(format!("Encounterd TokenType other than expected! {:#?}", token)),
+    //         }
+    //     }
+
+    //     Ok(())
+    // }
 }
