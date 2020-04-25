@@ -47,6 +47,7 @@ mod tests {
             "html",
             "table",
             "list",
+            "all",
         ];
 
         for test in test_files.iter() {
