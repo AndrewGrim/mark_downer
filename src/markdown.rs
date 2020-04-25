@@ -572,7 +572,9 @@ pub fn match_list(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut Cha
     while let Some(v) = iter.next() {
         match v.1 {
             '\n' => {
+                tokens.push(Token::new_single(TokenType::ListItemEnd, iter.index()));
                 if let Some(v) = iter.peek() {
+                    let indent_begin = v.0;
                     match v.1 {
                         '\n' => {
                             for i in (0..lists.len()).rev() {
@@ -581,7 +583,70 @@ pub fn match_list(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut Cha
                             }
                             break;
                         },
-                        _ => (), // TODO check indentation and list item begin
+                        '*' => {
+                            iter.next();
+                            if let Some(v) = iter.peek() {
+                                match v.1 {
+                                    ' ' => {
+                                        if lists[lists.len() - 1].1 > 0 {
+                                            // DONT! check until you hit a list with indent 0 instead!
+                                            // TODO for ordered lists
+                                            for i in (1..lists.len()).rev() { 
+                                                let l = lists.pop().unwrap();
+                                                tokens.push(Token::new_single(l.0, iter.index()));
+                                            }
+                                            tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+                                        } else {
+                                            tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+                                        }
+                                        iter.next();
+                                    },
+                                    _ => tokens.push(Token::new_double(TokenType::Error, iter.index())), // maybe last
+                                }
+                            }
+                        },
+                        ' ' => {
+                            loop {
+                                if !match_string(String::from("    "), text, &mut tokens, &mut iter, c) {
+                                    tokens.push(Token::new(TokenType::Error, indent_begin, iter.index()));
+                                    break;
+                                } else {
+                                    if let Some(v) = iter.peek() {
+                                        match v.1 {
+                                            ' ' => continue,
+                                            '*' => {
+                                                let current_indent = v.0 - indent_begin;
+                                                iter.next();
+                                                if let Some(v) = iter.peek() {
+                                                    match v.1 {
+                                                        ' ' => {
+                                                            if lists[lists.len() - 1].1 > current_indent {
+                                                                // DONT! check until you hit a list with the same indent instead!
+                                                                // TODO for ordered lists
+                                                                let l = lists.pop().unwrap(); // panic??
+                                                                tokens.push(Token::new_single(l.0, iter.index()));
+                                                                tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+                                                            } else if lists[lists.len() - 1].1 == current_indent {
+                                                                tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+                                                            } else {
+                                                                tokens.push(Token::new_double(TokenType::UnorderedListBegin, iter.index()));
+                                                                lists.push(wrapper::List(TokenType::UnorderedListEnd, current_indent));
+                                                                tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+                                                            }
+                                                            iter.next();
+                                                            break;
+                                                        },
+                                                        _ => tokens.push(Token::new_double(TokenType::Error, iter.index())), // maybe last
+                                                    }
+                                                }
+                                            },
+                                            _ => tokens.push(Token::new(TokenType::Error, indent_begin, v.0)),
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        _ => tokens.push(Token::new_single(TokenType::Error, v.0)), 
                     }
                 } else {
                     tokens.push(Token::new_single(TokenType::Newline, iter.last()));
@@ -597,6 +662,7 @@ pub fn match_list(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut Cha
 
 pub fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) -> bool {
     // TODO Utilize this function in other places in code.
+    // TODO remove c for this fucntion
     for ch in query.chars() {
         match iter.peek() {
             Some(v) => {
