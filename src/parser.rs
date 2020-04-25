@@ -177,9 +177,9 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                                     } else {
                                         if cell_count > 0 {
                                             if cell_count == columns.len() {
-                                                html.push("<tr>\n<td>\n".to_string());
+                                                html.push(format!("<tr>\n<td align=\"{}\">\n", columns[cell_count - 1].1));
                                             } else {
-                                                html.push("\n</td>\n<td>\n".to_string());
+                                                html.push(format!("\n</td>\n<td align=\"{}\">\n", columns[cell_count - 1].1));
                                             }
                                             cell_count -= 1;
                                         } else {
