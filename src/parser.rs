@@ -233,12 +233,12 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                     }
                 }
             },
-            TokenType::UnorderedListBegin => html.push("<ul>\n".to_string()),
-            TokenType::UnorderedListEnd => html.push("</ul>\n".to_string()),
-            TokenType::OrderedListBegin => html.push("<ol>\n".to_string()),
-            TokenType::OrderedListEnd => html.push("</ol>\n".to_string()),
-            TokenType::ListItemBegin => html.push("<li>\n".to_string()),
-            TokenType::ListItemEnd => html.push("\n</li>\n".to_string()),
+            TokenType::UnorderedListBegin => html.push("\n<ul>\n".to_string()),
+            TokenType::UnorderedListEnd => html.push("\n</ul>\n".to_string()),
+            TokenType::OrderedListBegin => html.push("\n<ol>\n".to_string()),
+            TokenType::OrderedListEnd => html.push("\n</ol>\n".to_string()),
+            TokenType::ListItemBegin => html.push("<li>".to_string()),
+            TokenType::ListItemEnd => html.push("</li>".to_string()),
             TokenType::HorizontalRule => html.push("<hr>\n".to_string()),
             TokenType::Code => html.push(format!("<code>{}</code>", text[t.begin..t.end].to_string())),
             TokenType::IndentBlock => html.push(format!("<pre>{}</pre>", text[t.begin + 4..t.end].replace("\n    ", "\n"))),
