@@ -713,8 +713,8 @@ pub fn match_list(list_type: wrapper::ListType, text: &String, mut tokens: &mut 
                     tokens.push(Token::new_single(TokenType::Newline, iter.last()));
                 }
             },
-            '*'|'~'|'_' => match_emphasis(&mut emphasis, text, &mut tokens, &mut iter, c),
-            '[' => match_link(text, &mut tokens, &mut iter, c),
+            '*'|'~'|'_' => match_emphasis(&mut emphasis, text, &mut tokens, &mut iter, v),
+            '[' => match_link(text, &mut tokens, &mut iter, v),
             _ => tokens.push(Token::new_single(TokenType::Text, iter.last())), // TODO why is last() the correct thing to do here?
         }
     }
@@ -760,7 +760,7 @@ fn push_indented_list(current_indent: usize, list_type: wrapper::ListType, lists
             iter.next();
         } else {
             tokens.push(Token::new_double(list_type.0, iter.index()));
-            lists.push(wrapper::List(list_type.1, 0));
+            lists.push(wrapper::List(list_type.1, current_indent));
             iter.next();
             tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
         }
@@ -770,13 +770,14 @@ fn push_indented_list(current_indent: usize, list_type: wrapper::ListType, lists
             iter.next();
         } else {
             tokens.push(Token::new_double(list_type.0, iter.index()));
-            lists.push(wrapper::List(list_type.1, 0));
+            lists.push(wrapper::List(list_type.1, current_indent));
             iter.next();
             tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
         }
     } else {
         tokens.push(Token::new_double(list_type.0, iter.index()));
         lists.push(wrapper::List(list_type.1, current_indent));
+        iter.next();
         tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
     }
 }
