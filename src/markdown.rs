@@ -726,6 +726,8 @@ fn push_list(list_type: wrapper::ListType, lists: &mut Vec<wrapper::List>, token
             tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
             iter.next();
         } else {
+            let l = lists.pop().unwrap();
+            tokens.push(Token::new_single(l.0, iter.index()));
             tokens.push(Token::new_double(list_type.0, iter.index()));
             lists.push(wrapper::List(list_type.1, 0));
             iter.next();
@@ -736,6 +738,8 @@ fn push_list(list_type: wrapper::ListType, lists: &mut Vec<wrapper::List>, token
             tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
             iter.next();
         } else {
+            let l = lists.pop().unwrap();
+            tokens.push(Token::new_single(l.0, iter.index()));
             tokens.push(Token::new_double(list_type.0, iter.index()));
             lists.push(wrapper::List(list_type.1, 0));
             iter.next();
@@ -746,12 +750,19 @@ fn push_list(list_type: wrapper::ListType, lists: &mut Vec<wrapper::List>, token
 
 fn push_indented_list(current_indent: usize, list_type: wrapper::ListType, lists: &mut Vec<wrapper::List>, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition) {
     if lists[lists.len() - 1].1 > current_indent {
-        let l = lists.pop().unwrap();
-        tokens.push(Token::new_single(l.0, iter.index()));
+        while let Some(l) = lists.get(lists.len() - 1) {
+            if l.1 == current_indent {
+                break;
+            }
+            let l = lists.pop().unwrap();
+            tokens.push(Token::new_single(l.0, iter.index()));
+        }
         if lists[lists.len() - 1].0 == list_type.1 {
             tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
             iter.next();
         } else {
+            let l = lists.pop().unwrap();
+            tokens.push(Token::new_single(l.0, iter.index()));
             tokens.push(Token::new_double(list_type.0, iter.index()));
             lists.push(wrapper::List(list_type.1, current_indent));
             iter.next();
@@ -762,6 +773,8 @@ fn push_indented_list(current_indent: usize, list_type: wrapper::ListType, lists
             tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
             iter.next();
         } else {
+            let l = lists.pop().unwrap();
+            tokens.push(Token::new_single(l.0, iter.index()));
             tokens.push(Token::new_double(list_type.0, iter.index()));
             lists.push(wrapper::List(list_type.1, current_indent));
             iter.next();

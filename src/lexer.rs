@@ -591,12 +591,12 @@ mod tests {
                 _ => (),
             }
         }
-        assert!(ulb == 7);
-        assert!(ule == 7);
+        assert!(ulb == 8);
+        assert!(ule == 8);
         assert!(olb == 3);
         assert!(ole == 3);
-        assert!(lib == 18);
-        assert!(lie == 18); 
+        assert!(lib == 19);
+        assert!(lie == 19); 
 
         assert!(ib == 2);
         assert!(ie == 2);
