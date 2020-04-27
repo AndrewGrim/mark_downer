@@ -88,12 +88,7 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                         },
                     None => break,
                 };
-                let mut lang = String::new();
-                if lang_iter.end - lang_iter.begin == 1 {
-                    lang += "base";
-                } else {
-                    lang = text[lang_iter.begin..lang_iter.end - 1].to_string();
-                }
+                let lang = text[lang_iter.begin..lang_iter.end - 1].to_string();
 
                 let block = match iter.peek() {
                     Some(n) => match n.id {
@@ -102,7 +97,7 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                     },
                     None => break,
                 };
-                html.push(format!("<pre class=\"language-{}\">{}</pre>",
+                html.push(format!("<pre class=\"language {}\">{}</pre>",
                         lang, text[block.begin..block.end - 2].to_string()));
                 match iter.peek() {
                     Some(n) => {
@@ -265,7 +260,7 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
 
 pub fn generate_html(output_file: String, html: Vec<String>) {
     let mut file = fs::File::create(output_file).unwrap();
-    file.write("<link rel=\"stylesheet\" href=\"default.css\">\n".as_bytes()).unwrap();
+    file.write("<link rel=\"stylesheet\" href=\"light_theme.css\">\n".as_bytes()).unwrap();
     file.write("<div class=\"markdown-body\">\n".as_bytes()).unwrap();
     for tag in html.iter() {
         file.write(tag.as_bytes()).unwrap();
