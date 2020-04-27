@@ -28,6 +28,7 @@ fn all() -> Result<(), io::Error> {
             markdowner::TokenType::HorizontalRule|
             markdowner::TokenType::Code|
             markdowner::TokenType::CodeBlockBegin|
+            markdowner::TokenType::CodeBlockLanguage|
             markdowner::TokenType::CodeBlockEnd|
             markdowner::TokenType::Checkbutton(true)|
             markdowner::TokenType::Checkbutton(false)|
@@ -43,7 +44,7 @@ fn all() -> Result<(), io::Error> {
             _ => (),
         }
     }
-    assert!(count == 58);
+    assert!(count == 65);
 
     Ok(())
 }

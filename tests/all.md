@@ -110,6 +110,15 @@ int main(string[] args) {
 }
 ```
 
+## No language code block
+```
+int main(int argc, char **argv) {
+    char *s = "test";
+
+    return 0;
+}
+```
+
 - [ ] unchecked
 - [x] checked
 
