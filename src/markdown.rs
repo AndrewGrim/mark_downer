@@ -323,7 +323,9 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                                                 },
                                             }
                                         },
-                                        _ => (),
+                                        '"' => string_or_char('"', '"', TokenType::CodeBlockString, tokens, iter, v),
+                                        '\'' => string_or_char('\'', '\'', TokenType::CodeBlockChar, tokens, iter, v),
+                                        _ => tokens.push(Token::new_single(TokenType::CodeBlockText, v.0)),
                                     }
                                 },
                                 None => {
@@ -340,6 +342,27 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
         }
     } else {
         tokens.push(Token::new_single(TokenType::Text, c.0));
+    }
+}
+
+fn string_or_char(begin: char, end: char, token_type: TokenType, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
+    if v.1 == begin {
+        let start: usize = v.0;
+        loop {
+            match iter.next() {
+                Some(v) => {
+                    if v.1 == end {
+                        tokens.push(Token::new(token_type, start, iter.index()));
+                        break;
+                    }
+                    else if v.1 == '\\' {
+                        tokens.push(Token::new(TokenType::CodeBlockEscape, iter.index(), iter.index() + 2));
+                        iter.next();
+                    }
+                },
+                None => break,
+            }
+        }
     }
 }
 

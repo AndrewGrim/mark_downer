@@ -5,6 +5,10 @@ this is a code block
 
 ```python
 def main(argc, argv):
+    """
+    Multiline doc string
+    """
+    
     print("prints something")
     for i in range(20):
         self.python_code_block()
@@ -12,5 +16,14 @@ def main(argc, argv):
     return x
 ```
 
-```this is not a code block```
-```end of file
+```rust
+fn main() -> String {
+    let c = 'c';
+    match c {
+        'c' => println!("confirmed"),
+        _ => println!("literally anything else"),
+    }
+
+    String::from("testing")
+}
+```

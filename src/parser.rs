@@ -89,16 +89,10 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                     None => break,
                 };
                 let lang = text[lang_iter.begin..lang_iter.end - 1].to_string();
-
-                let block = match iter.peek() {
-                    Some(n) => match n.id {
-                        TokenType::CodeBlockEnd => iter.next().unwrap(),
-                        _ => continue,
-                    },
-                    None => break,
-                };
-                html.push(format!("<pre class=\"language {}\">{}</pre>",
-                        lang, text[block.begin..block.end - 2].to_string()));
+                html.push(format!("<pre class=\"language {}\">\n", lang));
+            },
+            TokenType::CodeBlockEnd => {
+                html.push("</pre>".to_string());
                 match iter.peek() {
                     Some(n) => {
                         if n.id == TokenType::Newline {
@@ -108,6 +102,9 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                     None => (),
                 }
             },
+            TokenType::CodeBlockText => html.push(text[t.begin..t.end].to_string()),
+            TokenType::CodeBlockChar => html.push(format!("<span class=\"char\">{}</span>", text[t.begin..t.end].to_string())),
+            TokenType::CodeBlockString => html.push(format!("<span class=\"string\">{}</span>", text[t.begin..t.end].to_string())),
             TokenType::Escape => {
                 if let Some(v) = iter.next() {
                     html.push(text[v.begin..v.end].to_string());
