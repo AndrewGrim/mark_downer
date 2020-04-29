@@ -26,6 +26,8 @@ pub enum TokenType {
     CodeBlockKeyword,
     CodeBlockSymbol,
     CodeBlockFunction,
+    CodeBlockSingleLineComment,
+    CodeBlockMultiLineComment,
     CodeBlockEscape,
     IndentBlock,
     Escape,

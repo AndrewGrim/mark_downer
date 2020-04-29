@@ -333,6 +333,38 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                                         '"' => string_or_char('"', '"', TokenType::CodeBlockString, tokens, iter, v),
                                         '\'' => string_or_char('\'', '\'', TokenType::CodeBlockChar, tokens, iter, v),
                                         '0'..='9' => tokens.push(Token::new_single(TokenType::CodeBlockDigit, v.0)),
+                                        '/' => {
+                                            let begin = v.0;
+                                            if let Some(v) = iter.peek() {
+                                                if v.1 == '/' {
+                                                    iter.next();
+                                                    while let Some(v) = iter.next() {
+                                                        match v.1 {
+                                                            '\n' => {
+                                                                tokens.push(Token::new(TokenType::CodeBlockSingleLineComment, begin, iter.index()));
+                                                                break;
+                                                            },
+                                                            _ => (),
+                                                        }
+                                                    }
+                                                } else if v.1 == '*' {
+                                                    iter.next();
+                                                    while let Some(v) = iter.next() {
+                                                        match v.1 {
+                                                            '*' => {
+                                                                if let Some(v) = iter.next() {
+                                                                    if v.1 == '/' {
+                                                                        tokens.push(Token::new(TokenType::CodeBlockMultiLineComment, begin, iter.index()));
+                                                                        break;
+                                                                    }
+                                                                }
+                                                            },
+                                                            _ => (),
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
                                         _ => if v.1.is_alphabetic() || v.1 == '_' {
                                                 keyword(lang, &keywords, text, tokens, iter, v);
                                             } else {
