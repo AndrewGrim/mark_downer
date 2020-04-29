@@ -44,7 +44,7 @@ fn all() -> Result<(), io::Error> {
             _ => (),
         }
     }
-    assert!(count == 65);
+    assert!(count == 69);
 
     Ok(())
 }

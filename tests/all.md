@@ -110,6 +110,15 @@ int main(string[] args) {
 }
 ```
 
+## C code block
+```c
+int main(int argc, char **argv) {
+    char *s = "test";
+
+    return 0;
+}
+```
+
 ## No language code block
 ```
 int main(int argc, char **argv) {
