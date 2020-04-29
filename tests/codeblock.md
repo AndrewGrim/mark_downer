@@ -32,3 +32,19 @@ fn main() -> String {
     String::from("testing")
 }
 ```
+
+```
+int main(int argc, char **argv) {
+    printf("Hello");
+
+    return 0;
+}
+```
+
+```c
+int main(int argc, char **argv) {
+    printf("Hello");
+
+    return 0;
+}
+```

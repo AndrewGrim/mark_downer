@@ -1,3 +1,6 @@
+use std::path;
+use std::fs;
+
 use crate::token::Token;
 use crate::token::TokenType;
 use crate::emphasis::Tag;
@@ -278,6 +281,10 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                             }
                         }
                         let lang_end: usize = iter.index();
+                        // "text[lang_begin..lang_end - 1]" To step over the newline following the language name.
+                        let lang = &text[lang_begin..lang_end - 1];
+                        let mut keywords: Vec<String> = Vec::with_capacity(15);
+                        load_language_file(lang, &mut keywords);
                         loop {
                             match iter.next() {
                                 Some(v) => {
@@ -327,8 +334,7 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                                         '\'' => string_or_char('\'', '\'', TokenType::CodeBlockChar, tokens, iter, v),
                                         '0'..='9' => tokens.push(Token::new_single(TokenType::CodeBlockDigit, v.0)),
                                         _ => if v.1.is_alphabetic() || v.1 == '_' {
-                                                // "text[lang_begin..lang_end - 1]" To step over the newline following the language name.
-                                                keyword(&text[lang_begin..lang_end - 1], text, tokens, iter, v);
+                                                keyword(lang, &keywords, text, tokens, iter, v);
                                             } else {
                                                 tokens.push(Token::new_single(TokenType::CodeBlockSymbol, v.0));
                                         },
@@ -348,6 +354,22 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
         }
     } else {
         tokens.push(Token::new_single(TokenType::Text, c.0));
+    }
+}
+
+fn load_language_file(lang: &str, keywords: &mut Vec<String>) {
+    let p = format!("syntax/{}.txt", lang.to_string());
+    let path = path::Path::new(&p);
+
+    if path.exists() {
+        let mut content = fs::read_to_string(path).expect("Couldn't load syntax file!");
+        if cfg!(windows) {
+            content = content.replace("\r", " ");
+        }
+        let iter = content.split('\n');
+        for line in iter {
+            keywords.push(line.to_string());
+        }
     }
 }
 
@@ -374,35 +396,8 @@ fn string_or_char(begin: char, end: char, token_type: TokenType, tokens: &mut Ve
     }
 }
 
-const KEYWORDS: &'static [&'static str] = &[
-    "break",
-    "match",
-    "const",
-    "continue",
-    "static",
-    "mut",
-    "else",
-    "enum",
-    "extern",
-    "false",
-    "for",
-    "if",
-    "return",
-    "struct",
-    "true",
-    "Some",
-    "None",
-    "let",
-    "while",
-    "String",
-    "in",
-    "def",
-    "fn",
-    "self",
-];
-
-fn is_keyword(text: &str) -> bool {
-    for k in KEYWORDS {
+fn is_keyword(text: &str, keywords: &Vec<String>) -> bool {
+    for k in keywords {
         if &text == k {
             return true;
         }
@@ -411,14 +406,14 @@ fn is_keyword(text: &str) -> bool {
     false
 }
 
-fn keyword(lang: &str, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
+fn keyword(lang: &str, keywords: &Vec<String>, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
     let begin = v.0;
     while let Some(v) = iter.next() {
         if !v.1.is_alphanumeric() && v.1 != '_' {
             if v.1 == '(' {
                 tokens.push(Token::new(TokenType::CodeBlockFunction, begin, iter.last()));
                 tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
-            } else if is_keyword(&text[begin..iter.last()]) {
+            } else if is_keyword(&text[begin..iter.last()], &keywords) {
                 tokens.push(Token::new(TokenType::CodeBlockKeyword, begin, iter.last()));
                 tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
             } else {
