@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy)]
 pub enum TokenType {
     Newline,
     Tab,
@@ -22,6 +22,7 @@ pub enum TokenType {
     CodeBlockText,
     CodeBlockString,
     CodeBlockChar,
+    CodeBlockDigit,
     CodeBlockEscape,
     IndentBlock,
     Escape,
@@ -46,6 +47,12 @@ pub enum TokenType {
     OrderedListEnd,
     ListItemBegin,
     ListItemEnd,
+}
+
+impl Clone for TokenType {
+    fn clone(&self) -> Self {
+        *self
+    }
 }
 
 #[derive(Debug, PartialEq)]

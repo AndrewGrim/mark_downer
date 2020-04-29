@@ -325,7 +325,12 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                                         },
                                         '"' => string_or_char('"', '"', TokenType::CodeBlockString, tokens, iter, v),
                                         '\'' => string_or_char('\'', '\'', TokenType::CodeBlockChar, tokens, iter, v),
-                                        _ => tokens.push(Token::new_single(TokenType::CodeBlockText, v.0)),
+                                        '0'..='9' => tokens.push(Token::new_single(TokenType::CodeBlockDigit, v.0)),
+                                        _ => if v.1.is_alphabetic() {
+                                                keyword(lang_end - lang_begin, tokens, iter, v);
+                                            } else {
+                                                tokens.push(Token::new_single(TokenType::CodeBlockText, v.0));
+                                        },
                                     }
                                 },
                                 None => {
@@ -347,7 +352,7 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
 
 fn string_or_char(begin: char, end: char, token_type: TokenType, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
     if v.1 == begin {
-        let start: usize = v.0;
+        let mut start: usize = v.0;
         loop {
             match iter.next() {
                 Some(v) => {
@@ -356,14 +361,20 @@ fn string_or_char(begin: char, end: char, token_type: TokenType, tokens: &mut Ve
                         break;
                     }
                     else if v.1 == '\\' {
-                        tokens.push(Token::new(TokenType::CodeBlockEscape, iter.index(), iter.index() + 2));
+                        tokens.push(Token::new(token_type, start, iter.last()));
+                        tokens.push(Token::new_double(TokenType::CodeBlockEscape, iter.last()));
                         iter.next();
+                        start = iter.index();
                     }
                 },
                 None => break,
             }
         }
     }
+}
+
+fn keyword(lang: usize, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
+    // TODO read file with keywords and match based on that
 }
 
 pub fn match_indentblock(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut CharsWithPosition, c: (usize, char)) {

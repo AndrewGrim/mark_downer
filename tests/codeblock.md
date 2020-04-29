@@ -9,7 +9,7 @@ def main(argc, argv):
     Multiline doc string
     """
     
-    print("prints something")
+    print("prin\ts \\\ something\n")
     for i in range(20):
         self.python_code_block()
 
@@ -18,9 +18,11 @@ def main(argc, argv):
 
 ```rust
 fn main() -> String {
+    let test1 = 15;
     let c = 'c';
     match c {
         'c' => println!("confirmed"),
+        '\'' => println!("escaped"),
         _ => println!("literally anything else"),
     }
 
