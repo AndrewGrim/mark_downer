@@ -349,33 +349,32 @@ mod tests {
         Ok(())
     }
 
-    // #[test]
-    // fn codeblock() -> Result<(), io::Error> {
-    //     let t = lex(&fs::read_to_string("tests/codeblock.md")?);
-    //     let mut cbb: usize = 0;
-    //     let mut cbe: usize = 0;
-    //     let mut cbl: usize = 0;
-    //     for token in t.iter() {
-    //         match token.id {
-    //             TokenType::CodeBlockBegin => {
-    //                 cbb += 1;
-    //             },
-    //             TokenType::CodeBlockEnd => {
-    //                 cbe += 1;
-    //             },
-    //             TokenType::CodeBlockLanguage => {
-    //                 cbl += 1;
-    //             },
-    //             TokenType::Text|TokenType::Space|TokenType::Newline => (),
-    //             _ => panic!("Encounterd TokenType other than expected!"),
-    //         }
-    //     }
-    //     assert!(cbb == 3);
-    //     assert!(cbl == 3);
-    //     assert!(cbe == 2);
+    #[test]
+    fn codeblock() -> Result<(), io::Error> {
+        let t = lex(&fs::read_to_string("tests/codeblock.md")?);
+        let mut cbb: usize = 0;
+        let mut cbe: usize = 0;
+        let mut cbl: usize = 0;
+        for token in t.iter() {
+            match token.id {
+                TokenType::CodeBlockBegin => {
+                    cbb += 1;
+                },
+                TokenType::CodeBlockEnd => {
+                    cbe += 1;
+                },
+                TokenType::CodeBlockLanguage => {
+                    cbl += 1;
+                },
+                _ => (),
+            }
+        }
+        assert!(cbb == 6);
+        assert!(cbl == 5);
+        assert!(cbe == 5);
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 
     #[test]
     fn indentblock() -> Result<(), io::Error> {

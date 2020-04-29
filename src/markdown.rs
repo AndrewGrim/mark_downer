@@ -277,7 +277,7 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                                         _ => (),
                                     }
                                 },
-                                None => break,
+                                None => return,
                             }
                         }
                         let lang_end: usize = iter.index();
