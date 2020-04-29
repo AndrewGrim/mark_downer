@@ -326,10 +326,11 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                                         '"' => string_or_char('"', '"', TokenType::CodeBlockString, tokens, iter, v),
                                         '\'' => string_or_char('\'', '\'', TokenType::CodeBlockChar, tokens, iter, v),
                                         '0'..='9' => tokens.push(Token::new_single(TokenType::CodeBlockDigit, v.0)),
-                                        _ => if v.1.is_alphabetic() {
-                                                keyword(lang_end - lang_begin, tokens, iter, v);
+                                        _ => if v.1.is_alphabetic() || v.1 == '_' {
+                                                // "text[lang_begin..lang_end - 1]" To step over the newline following the language name.
+                                                keyword(&text[lang_begin..lang_end - 1], text, tokens, iter, v);
                                             } else {
-                                                tokens.push(Token::new_single(TokenType::CodeBlockText, v.0));
+                                                tokens.push(Token::new_single(TokenType::CodeBlockSymbol, v.0));
                                         },
                                     }
                                 },
@@ -373,8 +374,60 @@ fn string_or_char(begin: char, end: char, token_type: TokenType, tokens: &mut Ve
     }
 }
 
-fn keyword(lang: usize, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
-    // TODO read file with keywords and match based on that
+const KEYWORDS: &'static [&'static str] = &[
+    "break",
+    "match",
+    "const",
+    "continue",
+    "static",
+    "mut",
+    "else",
+    "enum",
+    "extern",
+    "false",
+    "for",
+    "if",
+    "return",
+    "struct",
+    "true",
+    "Some",
+    "None",
+    "let",
+    "while",
+    "String",
+    "in",
+    "def",
+    "fn",
+    "self",
+];
+
+fn is_keyword(text: &str) -> bool {
+    for k in KEYWORDS {
+        if &text == k {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn keyword(lang: &str, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
+    let begin = v.0;
+    while let Some(v) = iter.next() {
+        if !v.1.is_alphanumeric() && v.1 != '_' {
+            if v.1 == '(' {
+                tokens.push(Token::new(TokenType::CodeBlockFunction, begin, iter.last()));
+                tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
+            } else if is_keyword(&text[begin..iter.last()]) {
+                tokens.push(Token::new(TokenType::CodeBlockKeyword, begin, iter.last()));
+                tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
+            } else {
+                tokens.push(Token::new(TokenType::CodeBlockText, begin, iter.last()));
+                tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
+            }
+            break;
+        }
+    }
 }
 
 pub fn match_indentblock(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut CharsWithPosition, c: (usize, char)) {

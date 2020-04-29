@@ -104,8 +104,11 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
             },
             TokenType::CodeBlockText => html.push(text[t.begin..t.end].to_string()),
             TokenType::CodeBlockDigit => html.push(format!("<span class=\"digit\">{}</span>", text[t.begin..t.end].to_string())),
+            TokenType::CodeBlockSymbol => html.push(format!("<span class=\"symbol\">{}</span>", text[t.begin..t.end].to_string())),
             TokenType::CodeBlockChar => html.push(format!("<span class=\"char\">{}</span>", text[t.begin..t.end].to_string())),
             TokenType::CodeBlockEscape => html.push(format!("<span class=\"escape\">{}</span>", text[t.begin..t.end].to_string())),
+            TokenType::CodeBlockFunction => html.push(format!("<span class=\"function\">{}</span>", text[t.begin..t.end].to_string())),
+            TokenType::CodeBlockKeyword => html.push(format!("<span class=\"keyword\">{}</span>", text[t.begin..t.end].to_string())),
             TokenType::CodeBlockString => html.push(format!("<span class=\"string\">{}</span>", text[t.begin..t.end].to_string())),
             TokenType::Escape => {
                 if let Some(v) = iter.next() {

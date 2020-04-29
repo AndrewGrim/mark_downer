@@ -18,8 +18,11 @@ def main(argc, argv):
 
 ```rust
 fn main() -> String {
-    let test1 = 15;
+    let _test1 = 15;
     let c = 'c';
+
+    _function_call();
+
     match c {
         'c' => println!("confirmed"),
         '\'' => println!("escaped"),
