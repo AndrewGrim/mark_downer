@@ -285,6 +285,10 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                         let lang = &text[lang_begin..lang_end - 1];
                         let mut keywords: Vec<String> = Vec::with_capacity(15);
                         load_language_file(lang, &mut keywords);
+                        let single = String::from("//");
+                        let single_open = single.chars().next().unwrap();
+                        let multi_open = String::from("/*");
+                        let multi_close = String::from("*/");
                         loop {
                             match iter.next() {
                                 Some(v) => {
@@ -333,40 +337,10 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                                         '"' => string_or_char('"', '"', TokenType::CodeBlockString, tokens, iter, v),
                                         '\'' => string_or_char('\'', '\'', TokenType::CodeBlockChar, tokens, iter, v),
                                         '0'..='9' => tokens.push(Token::new_single(TokenType::CodeBlockDigit, v.0)),
-                                        '/' => {
-                                            let begin = v.0;
-                                            if let Some(v) = iter.peek() {
-                                                if v.1 == '/' {
-                                                    iter.next();
-                                                    while let Some(v) = iter.next() {
-                                                        match v.1 {
-                                                            '\n' => {
-                                                                tokens.push(Token::new(TokenType::CodeBlockSingleLineComment, begin, iter.index()));
-                                                                break;
-                                                            },
-                                                            _ => (),
-                                                        }
-                                                    }
-                                                } else if v.1 == '*' {
-                                                    iter.next();
-                                                    while let Some(v) = iter.next() {
-                                                        match v.1 {
-                                                            '*' => {
-                                                                if let Some(v) = iter.next() {
-                                                                    if v.1 == '/' {
-                                                                        tokens.push(Token::new(TokenType::CodeBlockMultiLineComment, begin, iter.index()));
-                                                                        break;
-                                                                    }
-                                                                }
-                                                            },
-                                                            _ => (),
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        },
                                         _ => if v.1.is_alphabetic() || v.1 == '_' {
                                                 keyword(lang, &keywords, text, tokens, iter, v);
+                                            } else if v.1 == single_open {
+                                                comment(&single, &multi_open, &multi_close, tokens, iter, v);
                                             } else {
                                                 tokens.push(Token::new_single(TokenType::CodeBlockSymbol, v.0));
                                         },
@@ -386,6 +360,56 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
         }
     } else {
         tokens.push(Token::new_single(TokenType::Text, c.0));
+    }
+}
+
+fn comment(single_comment: &String, multi_comment_open: &String, multi_comment_close: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
+    let begin = v.0;
+    if single_comment.len() != 1 {
+        // let single = single_comment.get(1..).unwrap();
+        // let multi = multi_comment_open.get(1..).unwrap();
+        // if match_string(single, iter) {
+
+        // }
+        if let Some(v) = iter.peek() {
+            if v.1 == '/' {
+                iter.next();
+                while let Some(v) = iter.next() {
+                    match v.1 {
+                        '\n' => {
+                            tokens.push(Token::new(TokenType::CodeBlockSingleLineComment, begin, iter.index()));
+                            break;
+                        },
+                        _ => (), // <!-- -->
+                    }
+                }
+            } else if v.1 == '*' {
+                iter.next();
+                while let Some(v) = iter.next() {
+                    match v.1 {
+                        '*' => {
+                            if let Some(v) = iter.next() {
+                                if v.1 == '/' {
+                                    tokens.push(Token::new(TokenType::CodeBlockMultiLineComment, begin, iter.index()));
+                                    break;
+                                }
+                            }
+                        },
+                        _ => (),
+                    }
+                }
+            }
+        }
+    } else {
+        while let Some(v) = iter.next() {
+            match v.1 {
+                '\n' => {
+                    tokens.push(Token::new(TokenType::CodeBlockSingleLineComment, begin, iter.index()));
+                    break;
+                },
+                _ => (),
+            }
+        }
     }
 }
 
@@ -457,15 +481,15 @@ fn keyword(lang: &str, keywords: &Vec<String>, text: &String, tokens: &mut Vec<T
     }
 }
 
-pub fn match_indentblock(text: &String, mut tokens: &mut Vec<Token>, mut iter: &mut CharsWithPosition, c: (usize, char)) {
+pub fn match_indentblock(text: &String, tokens: &mut Vec<Token>, mut iter: &mut CharsWithPosition, c: (usize, char)) {
     iter.next();
-    if match_string(String::from("  "), text, &mut tokens, &mut iter) {
+    if match_string("  ", &mut iter) {
         loop {
             match iter.next() {
                 Some(v) => {
                     match v.1 {
                         '\n' => {
-                            if !match_string(String::from("    "), text, &mut tokens, &mut iter) {
+                            if !match_string("    ", &mut iter) {
                                 // "c.0 + 1" Steps over the newline which is required to start an indented block.
                                 tokens.push(Token::new(TokenType::IndentBlock, c.0 + 1, iter.last()));
                                 break;
@@ -740,7 +764,7 @@ pub fn match_list(list_type: wrapper::ListType, text: &String, mut tokens: &mut 
                         },
                         ' ' => {
                             loop {
-                                if !match_string(String::from("    "), text, &mut tokens, &mut iter) {
+                                if !match_string("    ", &mut iter) {
                                     tokens.push(Token::new(TokenType::Error, indent_begin, iter.index()));
                                     break;
                                 } else {
@@ -902,7 +926,7 @@ fn push_indented_list(current_indent: usize, list_type: wrapper::ListType, lists
     }
 }
 
-pub fn match_string(query: String, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition) -> bool {
+pub fn match_string(query: &str, iter: &mut CharsWithPosition) -> bool {
     // TODO Utilize this function in other places in code.
     for ch in query.chars() {
         match iter.peek() {
