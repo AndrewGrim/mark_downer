@@ -8,6 +8,8 @@ def main(argc, argv):
     """
     Multiline doc string
     """
+
+    # single line comment
     
     print("prin\ts \\\ something\n")
     for i in range(20):
@@ -23,6 +25,8 @@ fn main() -> String {
 
     _function_call();
 
+    // single line comment
+
     match c {
         'c' => println!("confirmed"),
         '\'' => println!("escaped"),
@@ -30,6 +34,10 @@ fn main() -> String {
     }
 
     String::from("testing")
+
+    /*multi
+    line
+    comment*/
 }
 ```
 
