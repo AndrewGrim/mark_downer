@@ -285,9 +285,10 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                         let lang = &text[lang_begin..lang_end - 1];
                         let mut keywords: Vec<String> = Vec::with_capacity(15);
                         load_language_file(lang, &mut keywords);
-                        let single = String::from("//");
+                        let single = String::from("#");
                         let single_open = single.chars().next().unwrap();
                         let multi_open = String::from("/*");
+                        let multi_first = multi_open.chars().next().unwrap();
                         let multi_close = String::from("*/");
                         loop {
                             match iter.next() {
@@ -340,7 +341,9 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                                         _ => if v.1.is_alphabetic() || v.1 == '_' {
                                                 keyword(lang, &keywords, text, tokens, iter, v);
                                             } else if v.1 == single_open {
-                                                comment(&single, &multi_open, &multi_close, tokens, iter, v);
+                                                single_comment(&single, tokens, iter, v);
+                                            } else if v.1 == multi_first {
+                                                multi_comment(&multi_open, &multi_close, tokens, iter, v);
                                             } else {
                                                 tokens.push(Token::new_single(TokenType::CodeBlockSymbol, v.0));
                                         },
@@ -363,43 +366,21 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
     }
 }
 
-fn comment(single_comment: &String, multi_comment_open: &String, multi_comment_close: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
+fn single_comment(single_comment: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
     let begin = v.0;
     if single_comment.len() != 1 {
-        // let single = single_comment.get(1..).unwrap();
-        // let multi = multi_comment_open.get(1..).unwrap();
-        // if match_string(single, iter) {
-
-        // }
-        if let Some(v) = iter.peek() {
-            if v.1 == '/' {
-                iter.next();
-                while let Some(v) = iter.next() {
-                    match v.1 {
-                        '\n' => {
-                            tokens.push(Token::new(TokenType::CodeBlockSingleLineComment, begin, iter.index()));
-                            break;
-                        },
-                        _ => (), // <!-- -->
-                    }
-                }
-            } else if v.1 == '*' {
-                iter.next();
-                while let Some(v) = iter.next() {
-                    match v.1 {
-                        '*' => {
-                            if let Some(v) = iter.next() {
-                                if v.1 == '/' {
-                                    tokens.push(Token::new(TokenType::CodeBlockMultiLineComment, begin, iter.index()));
-                                    break;
-                                }
-                            }
-                        },
-                        _ => (),
-                    }
+        let single = single_comment.get(1..).unwrap();
+        if match_string(single, iter) {
+            while let Some(v) = iter.next() {
+                match v.1 {
+                    '\n' => {
+                        tokens.push(Token::new(TokenType::CodeBlockSingleLineComment, begin, iter.index()));
+                        break;
+                    },
+                    _ => (),
                 }
             }
-        }
+        } 
     } else {
         while let Some(v) = iter.next() {
             match v.1 {
@@ -408,6 +389,20 @@ fn comment(single_comment: &String, multi_comment_open: &String, multi_comment_c
                     break;
                 },
                 _ => (),
+            }
+        }
+    }
+}
+
+fn multi_comment(multi_comment_open: &String, multi_comment_close: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
+    let begin = v.0;
+    let multi = multi_comment_open.get(1..).unwrap();
+    let multi_close = multi_comment_close.get(0..).unwrap();
+    if match_string(multi, iter) {
+        while let Some(v) = iter.next() {
+            if match_string(multi_close, iter) {
+                tokens.push(Token::new(TokenType::CodeBlockMultiLineComment, begin, iter.index()));
+                break;
             }
         }
     }
