@@ -1,4 +1,8 @@
 /target
-/generated_html
 /log
 /.vscode
+/generated_html/images
+
+*.html
+*.css
+*.png
