@@ -1,0 +1,41 @@
+keywords1 = [
+    "def",
+    "if",
+    "raise",
+    "del",
+    "return",
+    "elif",
+    "in",
+    "try",
+    "and",
+    "else",
+    "is",
+    "while",
+    "as",
+    "except",
+    "lambda",
+    "with",
+    "assert",
+    "finally",
+    "nonlocal",
+    "yield",
+    "break",
+    "for",
+    "not",
+    "class",
+    "from",
+    "or",
+    "continue",
+    "global",
+    "pass",
+]
+keywords2 = [
+    "False",
+    "True",
+    "import",
+    "None",
+    "self",
+]
+single_line_comment = "#"
+multi_line_comment_open = "NOT USED"
+multi_line_comment_close = "NOT USED"
