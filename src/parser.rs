@@ -108,7 +108,8 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
             TokenType::CodeBlockChar => html.push(format!("<span class=\"char\">{}</span>", text[t.begin..t.end].to_string())),
             TokenType::CodeBlockEscape => html.push(format!("<span class=\"escape\">{}</span>", text[t.begin..t.end].to_string())),
             TokenType::CodeBlockFunction => html.push(format!("<span class=\"function\">{}</span>", text[t.begin..t.end].to_string())),
-            TokenType::CodeBlockKeyword => html.push(format!("<span class=\"keyword\">{}</span>", text[t.begin..t.end].to_string())),
+            TokenType::CodeBlockKeyword1 => html.push(format!("<span class=\"keyword1\">{}</span>", text[t.begin..t.end].to_string())),
+            TokenType::CodeBlockKeyword2 => html.push(format!("<span class=\"keyword2\">{}</span>", text[t.begin..t.end].to_string())),
             TokenType::CodeBlockString => html.push(format!("<span class=\"string\">{}</span>", text[t.begin..t.end].to_string())),
             TokenType::CodeBlockSingleLineComment|
             TokenType::CodeBlockMultiLineComment => html.push(format!("<span class=\"comment\">{}</span>", text[t.begin..t.end].to_string())),

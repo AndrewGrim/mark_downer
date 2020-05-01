@@ -1,6 +1,3 @@
-use std::path;
-use std::fs;
-
 use crate::token::Token;
 use crate::token::TokenType;
 use crate::emphasis::Tag;
@@ -9,6 +6,7 @@ use crate::table::Alignment;
 use crate::table;
 use crate::wrapper;
 use crate::wrapper::CharsWithPosition;
+use crate::syntax;
 
 pub fn match_heading(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
     if c.0 == 0 || &text[c.0 - 1..c.0] == "\n" {
@@ -281,79 +279,11 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
                             }
                         }
                         let lang_end: usize = iter.index();
-                        // "text[lang_begin..lang_end - 1]" To step over the newline following the language name.
                         let lang = &text[lang_begin..lang_end - 1];
-                        let mut keywords: Vec<String> = Vec::with_capacity(15);
-                        load_language_file(lang, &mut keywords);
-                        let single = String::from("#");
-                        let single_open = single.chars().next().unwrap();
-                        let multi_open = String::from("/*");
-                        let multi_first = multi_open.chars().next().unwrap();
-                        let multi_close = String::from("*/");
-                        loop {
-                            match iter.next() {
-                                Some(v) => {
-                                    match v.1 {
-                                        '`' => {
-                                            match iter.next() {
-                                                Some(v) => {
-                                                    match v.1 {
-                                                        '`' => {
-                                                            match iter.next() {
-                                                                Some(v) => {
-                                                                    match v.1 {
-                                                                        '`' => {
-                                                                            match iter.peek() {
-                                                                                Some(v) => match v.1 {
-                                                                                    '\n' => {
-                                                                                        // "iter.index() - 1" Because we dont want to include the "```" in the codeblock.
-                                                                                        tokens.push(Token::new(TokenType::CodeBlockEnd, lang_end, iter.index() - 1));
-                                                                                        iter.next();
-                                                                                        tokens.push(Token::new_single(TokenType::Newline, iter.index()));
-                                                                                        break;
-                                                                                    },
-                                                                                    _ => (),
-                                                                                },
-                                                                                None => tokens.push(Token::new(TokenType::Text, c.0, iter.last())),
-                                                                            }
-                                                                        },
-                                                                        _ => (),
-                                                                    }
-                                                                },
-                                                                None => {
-                                                                    tokens.push(Token::new(TokenType::Text, c.0, iter.last()));
-                                                                    break;
-                                                                },
-                                                            }
-                                                        },
-                                                        _ => (),
-                                                    }
-                                                },
-                                                None => {
-                                                    tokens.push(Token::new(TokenType::Text, c.0, iter.last()));
-                                                    break;
-                                                },
-                                            }
-                                        },
-                                        '"' => string_or_char('"', '"', TokenType::CodeBlockString, tokens, iter, v),
-                                        '\'' => string_or_char('\'', '\'', TokenType::CodeBlockChar, tokens, iter, v),
-                                        '0'..='9' => tokens.push(Token::new_single(TokenType::CodeBlockDigit, v.0)),
-                                        _ => if v.1.is_alphabetic() || v.1 == '_' {
-                                                keyword(lang, &keywords, text, tokens, iter, v);
-                                            } else if v.1 == single_open {
-                                                single_comment(&single, tokens, iter, v);
-                                            } else if v.1 == multi_first {
-                                                multi_comment(&multi_open, &multi_close, tokens, iter, v);
-                                            } else {
-                                                tokens.push(Token::new_single(TokenType::CodeBlockSymbol, v.0));
-                                        },
-                                    }
-                                },
-                                None => {
-                                    tokens.push(Token::new(TokenType::Text, c.0, iter.last()));
-                                    break;
-                                },
-                            }
+                        let syntax = syntax::load_language_file(lang);
+                        match syntax {
+                            Some(s) => syntax::highlight_language(s, lang, lang_end, text, tokens, iter, c),
+                            None => syntax::highlight_generic(lang_end, tokens, iter, c),
                         }
                     },
                     _ => tokens.push(Token::new(TokenType::Text, c.0, v.0)),
@@ -363,116 +293,6 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
         }
     } else {
         tokens.push(Token::new_single(TokenType::Text, c.0));
-    }
-}
-
-fn single_comment(single_comment: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
-    let begin = v.0;
-    if single_comment.len() != 1 {
-        let single = single_comment.get(1..).unwrap();
-        if match_string(single, iter) {
-            while let Some(v) = iter.next() {
-                match v.1 {
-                    '\n' => {
-                        tokens.push(Token::new(TokenType::CodeBlockSingleLineComment, begin, iter.index()));
-                        break;
-                    },
-                    _ => (),
-                }
-            }
-        } 
-    } else {
-        while let Some(v) = iter.next() {
-            match v.1 {
-                '\n' => {
-                    tokens.push(Token::new(TokenType::CodeBlockSingleLineComment, begin, iter.index()));
-                    break;
-                },
-                _ => (),
-            }
-        }
-    }
-}
-
-fn multi_comment(multi_comment_open: &String, multi_comment_close: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
-    let begin = v.0;
-    let multi = multi_comment_open.get(1..).unwrap();
-    let multi_close = multi_comment_close.get(0..).unwrap();
-    if match_string(multi, iter) {
-        while let Some(v) = iter.next() {
-            if match_string(multi_close, iter) {
-                tokens.push(Token::new(TokenType::CodeBlockMultiLineComment, begin, iter.index()));
-                break;
-            }
-        }
-    }
-}
-
-fn load_language_file(lang: &str, keywords: &mut Vec<String>) {
-    let p = format!("syntax/{}.txt", lang.to_string());
-    let path = path::Path::new(&p);
-
-    if path.exists() {
-        let mut content = fs::read_to_string(path).expect("Couldn't load syntax file!");
-        if cfg!(windows) {
-            content = content.replace("\r", " ");
-        }
-        let iter = content.split('\n');
-        for line in iter {
-            keywords.push(line.to_string());
-        }
-    }
-}
-
-fn string_or_char(begin: char, end: char, token_type: TokenType, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
-    if v.1 == begin {
-        let mut start: usize = v.0;
-        loop {
-            match iter.next() {
-                Some(v) => {
-                    if v.1 == end {
-                        tokens.push(Token::new(token_type, start, iter.index()));
-                        break;
-                    }
-                    else if v.1 == '\\' {
-                        tokens.push(Token::new(token_type, start, iter.last()));
-                        tokens.push(Token::new_double(TokenType::CodeBlockEscape, iter.last()));
-                        iter.next();
-                        start = iter.index();
-                    }
-                },
-                None => break,
-            }
-        }
-    }
-}
-
-fn is_keyword(text: &str, keywords: &Vec<String>) -> bool {
-    for k in keywords {
-        if &text == k {
-            return true;
-        }
-    }
-
-    false
-}
-
-fn keyword(lang: &str, keywords: &Vec<String>, text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
-    let begin = v.0;
-    while let Some(v) = iter.next() {
-        if !v.1.is_alphanumeric() && v.1 != '_' {
-            if v.1 == '(' {
-                tokens.push(Token::new(TokenType::CodeBlockFunction, begin, iter.last()));
-                tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
-            } else if is_keyword(&text[begin..iter.last()], &keywords) {
-                tokens.push(Token::new(TokenType::CodeBlockKeyword, begin, iter.last()));
-                tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
-            } else {
-                tokens.push(Token::new(TokenType::CodeBlockText, begin, iter.last()));
-                tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
-            }
-            break;
-        }
     }
 }
 
