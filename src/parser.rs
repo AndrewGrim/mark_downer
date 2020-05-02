@@ -40,7 +40,7 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
                 }
             },
             TokenType::ImageAlt => {
-                html.push(format!("<img alt=\"{}\"", text[t.begin..t.end].to_string()));
+                html.push(format!("<img class=\"md-img\" alt=\"{}\"", text[t.begin..t.end].to_string()));
                 let t = iter.next().unwrap();
                 html.push(format!(" src=\"{}\">", text[t.begin..t.end].to_string()));
             },
