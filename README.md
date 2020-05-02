@@ -34,7 +34,7 @@ Syntax files for these languages are provided:
 * Rust
 
 ### Styling
-The custom made `.scss` file can be found in [this](https://github.com/AndrewGrim/mark_downer/mark_downer_style) repo.
+The custom made `.scss` file can be found in [this](https://github.com/AndrewGrim/mark_downer_style) repo.
 
 ## How To Build
 This should work on any Rust installations that support the 2018 edition.
