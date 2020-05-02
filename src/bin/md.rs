@@ -12,7 +12,7 @@ fn main() -> Result<(), io::Error> {
     } else {
         let input = args.get(1).unwrap().as_str();
         let output = args.get(2).unwrap().as_str();
-        let css = args.get(2).unwrap().as_str();
+        let css = args.get(3).unwrap().as_str();
         markdowner::markdown_to_html(input, output, css)?;
     }
 
