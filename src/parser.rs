@@ -263,14 +263,16 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
     html
 }
 
-pub fn generate_html(output_file: String, html: Vec<String>) {
+pub fn generate_html(output_file: String, html: Vec<String>, css_file: &str) {
     let mut file = fs::File::create(output_file).unwrap();
-    file.write("<link rel=\"stylesheet\" href=\"light_theme.css\">\n".as_bytes()).unwrap();
-    file.write("<div class=\"markdown-body\">\n".as_bytes()).unwrap();
+    if css_file != "" {
+        file.write("<style>\n".as_bytes()).unwrap();
+        file.write(fs::read_to_string(css_file).unwrap().as_bytes()).unwrap();
+        file.write("</style>\n".as_bytes()).unwrap();
+    }
     for tag in html.iter() {
         file.write(tag.as_bytes()).unwrap();
     }
-    file.write("\n</div>".as_bytes()).unwrap();
 }
 
 //TODO Add parser tests

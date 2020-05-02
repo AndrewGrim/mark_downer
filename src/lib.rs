@@ -17,11 +17,11 @@ mod syntax;
 pub use token::Token;
 pub use token::TokenType;
 
-pub fn markdown_to_html(input: &str, output: &str) -> Result<Vec<Token>, io::Error> {
+pub fn markdown_to_html(input: &str, output: &str, css: &str) -> Result<Vec<Token>, io::Error> {
     let text: String = fs::read_to_string(input)?;
     let tokens = lexer::lex(&text);
     let html = parser::parse(&text, &tokens);
-    parser::generate_html(output.to_string(), html);
+    parser::generate_html(output.to_string(), html, css);
 
     Ok(tokens)
 }
@@ -53,7 +53,7 @@ mod tests {
 
         for test in test_files.iter() {
             let r = markdown_to_html(format!("tests/{}.md", test).as_str(),
-                                    format!("generated_html/{}.html", test).as_str());
+                                    format!("generated_html/{}.html", test).as_str(), "css/light_theme.css");
 
             match r {
                 Ok(tokens) => log_tokens(tokens, test)?,

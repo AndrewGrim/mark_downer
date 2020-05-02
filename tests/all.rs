@@ -4,7 +4,7 @@ use markdowner;
 
 #[test]
 fn all() -> Result<(), io::Error> {
-    let tokens: Vec<markdowner::Token> = markdowner::markdown_to_html("tests/all.md", "generated_html/all.html")?;
+    let tokens: Vec<markdowner::Token> = markdowner::markdown_to_html("tests/all.md", "generated_html/all.html", "css/light_theme.css")?;
     let mut count: usize = 0;
     for t in tokens {
         match t.id {

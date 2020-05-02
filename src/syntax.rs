@@ -149,7 +149,6 @@ pub fn single_comment(single_comment: &String, tokens: &mut Vec<Token>, iter: &m
 }
 
 pub fn multi_comment(multi_comment_open: &String, multi_comment_close: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
-    println!("TESTING!");
     let begin = v.0;
     let multi = multi_comment_open.get(1..).unwrap();
     let multi_close = multi_comment_close.get(0..).unwrap();
