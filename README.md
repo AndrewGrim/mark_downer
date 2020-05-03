@@ -5,7 +5,7 @@ If for some reason you want to use it:
 Know that it doesn't support most of the "official" specifications.
 It can also be pretty strict when it comes to what certain elements are declared like.
 
-For a simple example of all elements have a loot at the [this](tests/all.md) file.
+For a simple example of all elements have a look at the [this](tests/all.md) file.
 
 ## Features
 ### Supported elements
