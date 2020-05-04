@@ -12,6 +12,7 @@ use crate::token::TokenType;
 pub struct Syntax {
     pub keywords1: Vec<String>,
     pub keywords2: Vec<String>,
+    pub keywords3: Vec<String>,
     pub single_line_comment: String,
     pub multi_line_comment_open: String,
     pub multi_line_comment_close: String,
@@ -22,6 +23,7 @@ impl Syntax {
         Syntax {
             keywords1: Vec::new(),
             keywords2: Vec::new(),
+            keywords3: Vec::new(),
             single_line_comment: String::new(),
             multi_line_comment_open: String::new(),
             multi_line_comment_close: String::new(),
@@ -107,9 +109,12 @@ fn parse(text: &String) -> Syntax {
     if let Some(v) = map.remove("keywords2") {
         syntax.keywords2 = v;
     } 
+    if let Some(v) = map.remove("keywords3") {
+        syntax.keywords3 = v;
+    } 
     if let Some(mut v) = map.remove("single_line_comment") {
         syntax.single_line_comment = v.pop().unwrap();
-    } 
+    }
     if let Some(mut v) = map.remove("multi_line_comment_open") {
         syntax.multi_line_comment_open = v.pop().unwrap();
     } 
@@ -195,7 +200,7 @@ fn is_keyword(text: &str, keywords: &Vec<String>) -> bool {
     false
 }
 
-pub fn keyword(lang: &str, keywords: (&Vec<String>, &Vec<String>), text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
+pub fn keyword(lang: &str, keywords: (&Vec<String>, &Vec<String>, &Vec<String>), text: &String, tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, v: (usize, char)) {
     let begin = v.0;
     while let Some(v) = iter.next() {
         if !v.1.is_alphanumeric() && v.1 != '_' {
@@ -204,6 +209,9 @@ pub fn keyword(lang: &str, keywords: (&Vec<String>, &Vec<String>), text: &String
                 tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
             } else if is_keyword(&text[begin..iter.last()], keywords.1) {
                 tokens.push(Token::new(TokenType::CodeBlockKeyword2, begin, iter.last()));
+                tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
+            } else if is_keyword(&text[begin..iter.last()], keywords.2) {
+                tokens.push(Token::new(TokenType::CodeBlockKeyword3, begin, iter.last()));
                 tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
             } else if v.1 == '(' {
                 tokens.push(Token::new(TokenType::CodeBlockFunction, begin, iter.last()));
@@ -267,7 +275,7 @@ pub fn highlight_language(syntax: Syntax, lang: &str, lang_end: usize, text: &St
                     '\'' => string_or_char('\'', '\'', TokenType::CodeBlockChar, tokens, iter, v),
                     '0'..='9' => tokens.push(Token::new_single(TokenType::CodeBlockDigit, v.0)),
                     _ => if v.1.is_alphabetic() || v.1 == '_' {
-                            keyword(lang, (&syntax.keywords1, &syntax.keywords2), text, tokens, iter, v);
+                            keyword(lang, (&syntax.keywords1, &syntax.keywords2, &syntax.keywords3), text, tokens, iter, v);
                         } else if v.1 == syntax.single_open() {
                             // TODO what an awful mess
                             if syntax.single_open() == syntax.multi_open() {

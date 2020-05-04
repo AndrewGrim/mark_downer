@@ -1,7 +1,6 @@
 keywords1 = [
     "as",
     "break",
-    "const",
     "continue",
     "crate",
     "else",
@@ -28,23 +27,26 @@ keywords1 = [
     "while",
     "async",
     "await",
+    "bool",
+    "usize",
+    "ref",
 ]
 keywords2 = [
-    "static",
-    "dyn",
     "self",
     "Self",
     "Some",
     "None",
     "Ok",
     "Err",
-    "mut",
-    "pub",
-    "ref",
     "false",
     "true",
-    "bool",
-    "usize",
+]
+keywords3 = [
+    "pub",
+    "static",
+    "dyn",
+    "mut",
+    "const",
 ]
 single_line_comment = "//"
 multi_line_comment_open = "/*"

@@ -19,7 +19,7 @@ def main(argc, argv):
 ```
 
 ```rust
-fn main() -> String {
+pub fn main() -> Result<String, Err> {
     let _test1 = 15;
     let c = 'c';
 
@@ -33,11 +33,20 @@ fn main() -> String {
         _ => println!("literally anything else"),
     }
 
+    match Option<char> {
+        Some(c) => (),
+        None => (),
+    }
+
+    let mut test = "testing";
+
     String::from("testing")
 
     /*multi
     line
     comment*/
+
+    Ok(p)
 }
 ```
 

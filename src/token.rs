@@ -25,6 +25,7 @@ pub enum TokenType {
     CodeBlockDigit,
     CodeBlockKeyword1,
     CodeBlockKeyword2,
+    CodeBlockKeyword3,
     CodeBlockSymbol,
     CodeBlockFunction,
     CodeBlockSingleLineComment,
