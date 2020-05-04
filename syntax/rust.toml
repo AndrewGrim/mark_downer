@@ -36,6 +36,8 @@ keywords2 = [
     "Self",
     "Some",
     "None",
+    "Ok",
+    "Err",
     "mut",
     "pub",
     "ref",

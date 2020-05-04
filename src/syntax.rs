@@ -199,14 +199,14 @@ pub fn keyword(lang: &str, keywords: (&Vec<String>, &Vec<String>), text: &String
     let begin = v.0;
     while let Some(v) = iter.next() {
         if !v.1.is_alphanumeric() && v.1 != '_' {
-            if v.1 == '(' {
-                tokens.push(Token::new(TokenType::CodeBlockFunction, begin, iter.last()));
-                tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
-            } else if is_keyword(&text[begin..iter.last()], keywords.0) {
+            if is_keyword(&text[begin..iter.last()], keywords.0) {
                 tokens.push(Token::new(TokenType::CodeBlockKeyword1, begin, iter.last()));
                 tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
             } else if is_keyword(&text[begin..iter.last()], keywords.1) {
                 tokens.push(Token::new(TokenType::CodeBlockKeyword2, begin, iter.last()));
+                tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
+            } else if v.1 == '(' {
+                tokens.push(Token::new(TokenType::CodeBlockFunction, begin, iter.last()));
                 tokens.push(Token::new(TokenType::CodeBlockSymbol, iter.last(), iter.index()));
             } else {
                 tokens.push(Token::new(TokenType::CodeBlockText, begin, iter.last()));
