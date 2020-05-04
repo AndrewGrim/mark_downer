@@ -40,6 +40,10 @@ pub fn main() -> Result<String, Err> {
 
     let mut test = "testing";
 
+    let tuple = (1, '1');
+    let one = tuple.0;
+    let one_c = tuple.1;
+
     String::from("testing")
 
     /*multi

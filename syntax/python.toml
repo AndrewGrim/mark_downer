@@ -34,8 +34,8 @@ keywords2 = [
     "True",
     "import",
     "None",
+]
+keywords3 = [
     "self",
 ]
 single_line_comment = "#"
-multi_line_comment_open = "NOT USED"
-multi_line_comment_close = "NOT USED"

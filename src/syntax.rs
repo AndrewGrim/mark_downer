@@ -114,12 +114,18 @@ fn parse(text: &String) -> Syntax {
     } 
     if let Some(mut v) = map.remove("single_line_comment") {
         syntax.single_line_comment = v.pop().unwrap();
+    } else {
+        syntax.single_line_comment = String::from("_NOT_USED");
     }
     if let Some(mut v) = map.remove("multi_line_comment_open") {
         syntax.multi_line_comment_open = v.pop().unwrap();
-    } 
+    } else {
+        syntax.multi_line_comment_open = String::from("_NOT_USED");
+    }
     if let Some(mut v) = map.remove("multi_line_comment_close") {
         syntax.multi_line_comment_close = v.pop().unwrap();
+    } else {
+        syntax.multi_line_comment_close = String::from("_NOT_USED");
     }
 
     syntax
