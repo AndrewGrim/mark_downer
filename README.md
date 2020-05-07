@@ -61,7 +61,10 @@ pub fn markdown_to_html(input: &str, output: &str) -> Result<Vec<Token>, io::Err
 ```
 
 ### Using The Binary
-    md <input> <output>
+    md <input> <output> <css>
 `input` - The markdown file to be translated to html.
 
 `output` - The path to where the translated file will be saved.
+
+`css` - The path to the css file. This argument is optional. For making your own style take a look at the included [css file](css/light_theme.css).
+
