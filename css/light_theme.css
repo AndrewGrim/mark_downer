@@ -89,6 +89,11 @@ td:hover {
   height: auto;
 }
 
+.error {
+  color: #ffffff;
+  background-color: #e44533;
+}
+
 .language {
   color: #d5c4a1;
   background-color: #282828;
