@@ -77,6 +77,50 @@ pub fn lex(text: &String) -> Vec<Token> {
                                                         table.table_index = tokens.len();
                                                     }
                                                 },
+                                                '*' => {
+                                                    iter.next();
+                                                    if let Some(v) = iter.peek() {
+                                                        match v.1 {
+                                                            ' ' => markdown::match_list(
+                                                                wrapper::ListType(TokenType::UnorderedListBegin, TokenType::UnorderedListEnd),
+                                                                text,
+                                                                &mut tokens,
+                                                                &mut iter,
+                                                                (c.0 + 1, '_')
+                                                            ),
+                                                            '\n' => (),
+                                                            // "c.0 + 1" To step over opening newline.
+                                                            _ => markdown::match_emphasis(&mut emphasis, text, &mut tokens, &mut iter, (c.0 + 1, '*')),
+                                                        }
+                                                    } else {
+                                                        tokens.push(Token::new_single(TokenType::Text, iter.index()));
+                                                    }
+                                                },
+                                                '1' => {
+                                                    iter.next();
+                                                    if let Some(v) = iter.peek() {
+                                                        match v.1 {
+                                                            '.' => {
+                                                                iter.next();
+                                                                if let Some(v) = iter.peek() {
+                                                                    match v.1 {
+                                                                        ' ' => markdown::match_list(
+                                                                            wrapper::ListType(TokenType::OrderedListBegin, TokenType::OrderedListEnd),
+                                                                            text,
+                                                                            &mut tokens,
+                                                                            &mut iter,
+                                                                            (c.0 + 1, '_')
+                                                                        ),
+                                                                        '\n' => (),
+                                                                        _ => tokens.push(Token::new_single(TokenType::Text, iter.index())),
+                                                                    }
+                                                                }
+                                                            },
+                                                            '\n' => (),
+                                                            _ => tokens.push(Token::new_single(TokenType::Text, iter.index())),
+                                                        }
+                                                    }
+                                                },
                                                 ' ' => markdown::match_indentblock(text, &mut tokens, &mut iter, c),
                                                 _ => (),
                                             },

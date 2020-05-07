@@ -10,7 +10,6 @@ It has been developed and tested on Windows. However since it's using wxPython i
 Most of the information is linked. Meaning you can double click on a list item to go to that item's page and load the information about it.
 
 It contains the tabs with the following information:
-
 * Monsters
 * Quests
 * Weapons
