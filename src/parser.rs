@@ -242,7 +242,7 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
             TokenType::ListItemEnd => html.push("</li>".to_string()),
             TokenType::HorizontalRule => html.push("<hr>\n".to_string()),
             TokenType::Code => html.push(format!("<code>{}</code>", text[t.begin..t.end].to_string())),
-            TokenType::IndentBlock => html.push(format!("<pre>{}</pre>", text[t.begin + 4..t.end].replace("\n    ", "\n"))),
+            TokenType::IndentBlock => html.push(format!("<pre>{}</pre>", text[t.begin + 4..t.end].replace("\n    ", "\n").replace("<", "&#60").replace(">", "&#62"))), // TODO Yikes! Just lex this properly at some point.
             TokenType::ItalicBegin => html.push("<i>".to_string()),
             TokenType::ItalicEnd => html.push("</i>".to_string()),
             TokenType::BoldBegin => html.push("<b>".to_string()),
