@@ -54,6 +54,7 @@ pub enum TokenType {
     OrderedListEnd,
     ListItemBegin,
     ListItemEnd,
+    Html,
 }
 
 impl Clone for TokenType {

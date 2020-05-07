@@ -299,6 +299,12 @@ pub fn match_codeblock(text: &String, tokens: &mut Vec<Token>, iter: &mut CharsW
 pub fn match_indentblock(text: &String, tokens: &mut Vec<Token>, mut iter: &mut CharsWithPosition, c: (usize, char)) {
     iter.next();
     if match_string("  ", &mut iter) {
+        if let Some(v) = iter.peek() {
+            // Check if this is indented html.
+            if v.1 == '<' {
+                return;
+            }
+        }
         loop {
             match iter.next() {
                 Some(v) => {
@@ -738,6 +744,23 @@ fn push_indented_list(current_indent: usize, list_type: wrapper::ListType, lists
         lists.push(wrapper::List(list_type.1, current_indent));
         iter.next();
         tokens.push(Token::new_single(TokenType::ListItemBegin, iter.index()));
+    }
+}
+
+pub fn match_html(tokens: &mut Vec<Token>, iter: &mut CharsWithPosition, c: (usize, char)) {
+    while let Some(v) = iter.next() {
+        match v.1 {
+            '>' => {
+                if let Some(n) = iter.peek() {
+                    match n.1 {
+                        '\n' => tokens.push(Token::new(TokenType::Html, c.0, n.0)),
+                        _ => tokens.push(Token::new(TokenType::Html, c.0, v.0)),
+                    }
+                }
+                break;
+            },
+            _ => (),
+        }
     }
 }
 

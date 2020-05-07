@@ -242,7 +242,7 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
             TokenType::ListItemEnd => html.push("</li>".to_string()),
             TokenType::HorizontalRule => html.push("<hr>\n".to_string()),
             TokenType::Code => html.push(format!("<code>{}</code>", text[t.begin..t.end].to_string())),
-            TokenType::IndentBlock => html.push(format!("<pre>{}</pre>", text[t.begin + 4..t.end].replace("\n    ", "\n").replace("<", "&#60").replace(">", "&#62"))), // TODO Yikes! Just lex this properly at some point.
+            TokenType::IndentBlock => html.push(format!("<pre>{}</pre>", text[t.begin + 4..t.end].replace("\n    ", "\n").replace("<", "&#60").replace(">", "&#62"))),
             TokenType::ItalicBegin => html.push("<i>".to_string()),
             TokenType::ItalicEnd => html.push("</i>".to_string()),
             TokenType::BoldBegin => html.push("<b>".to_string()),
@@ -252,6 +252,17 @@ pub fn parse(text: &String, tokens: &Vec<Token>) -> Vec<String> {
             TokenType::UnderlineBegin => html.push("<u>".to_string()),
             TokenType::UnderlineEnd => html.push("</u>".to_string()),
             TokenType::Pipe => html.push(text[t.begin..t.end].to_string()),
+            TokenType::Html => {
+                html.push(text[t.begin..=t.end].to_string());
+                match iter.peek() {
+                    Some(n) => {
+                        if n.id == TokenType::Newline {
+                            iter.next();
+                        }
+                    },
+                    None => (),
+                }
+            },
             TokenType::Error => html.push(format!("<span class=\"error\">ERROR: {}</span>\n", text[t.begin..t.end].to_string())),
             TokenType::Newline => html.push("<br>\n".to_string()),
             TokenType::Text => html.push(text[t.begin..t.end].to_string()),

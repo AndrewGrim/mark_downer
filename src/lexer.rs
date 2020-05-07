@@ -37,6 +37,9 @@ pub fn lex(text: &String) -> Vec<Token> {
                     '[' => {
                         markdown::match_link(text, &mut tokens, &mut iter, c);
                     },
+                    '<' => {
+                        markdown::match_html(&mut tokens, &mut iter, c);
+                    }
                     '>' => {
                         markdown::match_blockquote(&mut emphasis, text, &mut tokens, &mut iter, c);
                     },
@@ -321,7 +324,8 @@ mod tests {
                 },
                 TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::ItalicBegin
                 |TokenType::BoldBegin|TokenType::UnderlineBegin|TokenType::StrikeBegin
-                |TokenType::ItalicEnd|TokenType::BoldEnd|TokenType::UnderlineEnd|TokenType::StrikeEnd => (),
+                |TokenType::ItalicEnd|TokenType::BoldEnd|TokenType::UnderlineEnd|TokenType::StrikeEnd
+                |TokenType::Html => (),
                 _ => panic!("Encounterd TokenType other than expected!"),
             }
         }
@@ -452,7 +456,7 @@ mod tests {
         let t = lex(&fs::read_to_string("tests/html.md")?);
         for token in t.iter() {
             match token.id {
-                TokenType::Text|TokenType::Space|TokenType::Newline => (),
+                TokenType::Text|TokenType::Space|TokenType::Newline|TokenType::Html => (),
                 _ => panic!(format!("Encounterd TokenType other than expected! {:#?}", token)),
             }
         }
