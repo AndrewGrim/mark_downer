@@ -302,6 +302,9 @@ pub fn match_indentblock(text: &String, tokens: &mut Vec<Token>, mut iter: &mut 
         if let Some(v) = iter.peek() {
             // Check if this is indented html.
             if v.1 == '<' {
+                // "c.0 + 1" Steps over the newline which is required to start an indented block.
+                tokens.push(Token::new(TokenType::Text, c.0 + 1, v.0));
+                
                 return;
             }
         }
