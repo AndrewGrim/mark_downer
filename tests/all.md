@@ -135,9 +135,9 @@ int main(int argc, char **argv) {
 
 [this is a link](https://google.com)
 
-<p>
-<img src="images/broken.png" alt="alt text" height="48" width="48">
-<strike><u><i><b>inline html</b></i></u></strike>
+<p align=center>
+    <img src="images/icon.png" alt="alt text" height="48" width="48">
+    <strike><u><i><b>inline html</b></i></u></strike>
 </p>
 
 | Heading Col 1 | Heading Col 2 | HCol 3|
