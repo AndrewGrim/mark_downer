@@ -49,6 +49,10 @@ mod tests {
             "table",
             "list",
             "all",
+            "md_readme",
+            "mh_readme",
+            "nm_readme",
+            "eli5_readme",
         ];
 
         for test in test_files.iter() {
