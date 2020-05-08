@@ -1,3 +1,12 @@
+//! A library for pasing markdown and outputting equivalent html.
+//!
+//! Note that this lib does not follow the popular specifications
+//! like `CommonMark`. 
+//!
+//! This is because it was mostly written for fun
+//! and to learn more about Rust and software in general. It is
+//! actively used by a personal project of mine.
+
 #![forbid(unsafe_code)]
 #![allow(dead_code, unused_variables)] // TODO remove this once ready
 
@@ -17,6 +26,13 @@ mod syntax;
 pub use token::Token;
 pub use token::TokenType;
 
+/// Converts a markdown file to an html file.
+///
+/// If you don't want to embed any css into the generated html,
+/// you can just pass an empty &str.
+///
+/// Returns a vector of tokens if successful.
+/// The tokens can be used for syntax highlighting using `the begin` and `end` indices.
 pub fn markdown_to_html(input: &str, output: &str, css: &str) -> Result<Vec<Token>, io::Error> {
     let text: String = fs::read_to_string(input)?;
     let tokens = lexer::lex(&text);

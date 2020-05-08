@@ -1,3 +1,7 @@
+/// Enum describing all the possible tokens.
+///
+/// `TokenType::Checkbutton(bool)` is the only type to store a value.
+/// True indicates that the checkbutton is checked.
 #[derive(Debug, PartialEq, Copy)]
 pub enum TokenType {
     Newline,
@@ -63,6 +67,7 @@ impl Clone for TokenType {
     }
 }
 
+/// Struct that represents a lexer token.
 #[derive(Debug, PartialEq)]
 pub struct Token {
     pub id: TokenType,
@@ -71,6 +76,7 @@ pub struct Token {
 }
 
 impl Token {
+    /// Creates a new `Token` with specified `begin` and `end` indices.
     pub fn new(id: TokenType, begin: usize, end: usize) -> Token {
         Token {
             id,
@@ -79,6 +85,7 @@ impl Token {
         }
     }
 
+    /// Creates a new `Token` with the length of one char.
     pub fn new_single(id: TokenType, begin: usize) -> Token {
         Token {
             id,
@@ -87,6 +94,7 @@ impl Token {
         }
     }
 
+    /// Creates a new `Token` with the length of two chars.
     pub fn new_double(id: TokenType, begin: usize) -> Token {
         Token {
             id,

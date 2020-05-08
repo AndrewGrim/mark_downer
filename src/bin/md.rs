@@ -1,8 +1,20 @@
+//! Binary that can convert a markdown file to an html file.
+//! # Example
+//! `md <input> <output> <css>`
+//!
+//! `input` - The markdown file to be translated to html.
+//!
+//! `output` - The path to where the translated file will be saved.
+//!
+//! `css` - The path to the css file. This argument is optional. 
+//! For making your own style take a look at the included css file.
+
 use std::io;
 use std::env;
 
 use markdowner;
 
+/// Parses args and calls the lib to generate html.
 fn main() -> Result<(), io::Error> {
     let args: Vec<String> = env::args().collect();
 
