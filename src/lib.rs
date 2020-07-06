@@ -32,7 +32,7 @@ pub use token::TokenType;
 /// you can just pass an empty &str.
 ///
 /// Returns a vector of tokens if successful.
-/// The tokens can be used for syntax highlighting using `the begin` and `end` indices.
+/// The tokens can be used for syntax highlighting using the `begin` and `end` indices.
 pub fn markdown_to_html(input: &str, output: &str, css: &str) -> Result<Vec<Token>, io::Error> {
     let text: String = fs::read_to_string(input)?;
     let tokens = lexer::lex(&text);
@@ -46,9 +46,19 @@ pub fn markdown_to_html(input: &str, output: &str, css: &str) -> Result<Vec<Toke
 mod tests {
     use super::*;
     use std::io::Write;
+    use std::path::Path;
+    use std::fs::create_dir;
 
     #[test]
     fn log() -> Result<(), io::Error> {
+        if !Path::new("generated_html").exists() {
+            create_dir("generated_html").unwrap();
+        }
+        if !Path::new("log").exists() {
+            create_dir("log").unwrap();
+        }
+        
+    
         let test_files = [
             "heading",
             "checkbutton",
