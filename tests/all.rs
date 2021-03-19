@@ -1,46 +1,46 @@
 use std::io;
 
-use markdowner;
+use markdown;
 
 #[test]
 fn all() -> Result<(), io::Error> {
-    let tokens: Vec<markdowner::Token> = markdowner::markdown_to_html("tests/all.md", "generated_html/all.html", "css/light_theme.css")?;
+    let tokens: Vec<markdown::Token> = markdown::markdown_to_html("tests/all.md", "generated_html/all.html", "css/light_theme.css")?;
     let mut count: usize = 0;
     for t in tokens {
         match t.id {
-            markdowner::TokenType::Heading|
-            markdowner::TokenType::UnorderedListBegin|
-            markdowner::TokenType::UnorderedListEnd|
-            markdowner::TokenType::OrderedListBegin|
-            markdowner::TokenType::OrderedListEnd|
-            markdowner::TokenType::ListItemBegin|
-            markdowner::TokenType::ListItemEnd|
-            markdowner::TokenType::BlockquoteBegin|
-            markdowner::TokenType::BlockquoteEnd|
-            markdowner::TokenType::ItalicBegin|
-            markdowner::TokenType::ItalicEnd|
-            markdowner::TokenType::BoldBegin|
-            markdowner::TokenType::BoldEnd|
-            markdowner::TokenType::StrikeBegin|
-            markdowner::TokenType::StrikeEnd|
-            markdowner::TokenType::UnderlineBegin|
-            markdowner::TokenType::UnderlineEnd|
-            markdowner::TokenType::HorizontalRule|
-            markdowner::TokenType::Code|
-            markdowner::TokenType::CodeBlockBegin|
-            markdowner::TokenType::CodeBlockLanguage|
-            markdowner::TokenType::CodeBlockEnd|
-            markdowner::TokenType::Checkbutton(true)|
-            markdowner::TokenType::Checkbutton(false)|
-            markdowner::TokenType::ImageAlt|
-            markdowner::TokenType::ImageSrc|
-            markdowner::TokenType::LinkHref|
-            markdowner::TokenType::LinkText|
-            markdowner::TokenType::TableBegin|
-            markdowner::TokenType::TableEnd|
-            markdowner::TokenType::TableColumnCenter|
-            markdowner::TokenType::TableColumnLeft|
-            markdowner::TokenType::TableColumnRight => count += 1,
+            markdown::TokenType::Heading|
+            markdown::TokenType::UnorderedListBegin|
+            markdown::TokenType::UnorderedListEnd|
+            markdown::TokenType::OrderedListBegin|
+            markdown::TokenType::OrderedListEnd|
+            markdown::TokenType::ListItemBegin|
+            markdown::TokenType::ListItemEnd|
+            markdown::TokenType::BlockquoteBegin|
+            markdown::TokenType::BlockquoteEnd|
+            markdown::TokenType::ItalicBegin|
+            markdown::TokenType::ItalicEnd|
+            markdown::TokenType::BoldBegin|
+            markdown::TokenType::BoldEnd|
+            markdown::TokenType::StrikeBegin|
+            markdown::TokenType::StrikeEnd|
+            markdown::TokenType::UnderlineBegin|
+            markdown::TokenType::UnderlineEnd|
+            markdown::TokenType::HorizontalRule|
+            markdown::TokenType::Code|
+            markdown::TokenType::CodeBlockBegin|
+            markdown::TokenType::CodeBlockLanguage|
+            markdown::TokenType::CodeBlockEnd|
+            markdown::TokenType::Checkbutton(true)|
+            markdown::TokenType::Checkbutton(false)|
+            markdown::TokenType::ImageAlt|
+            markdown::TokenType::ImageSrc|
+            markdown::TokenType::LinkHref|
+            markdown::TokenType::LinkText|
+            markdown::TokenType::TableBegin|
+            markdown::TokenType::TableEnd|
+            markdown::TokenType::TableColumnCenter|
+            markdown::TokenType::TableColumnLeft|
+            markdown::TokenType::TableColumnRight => count += 1,
             _ => (),
         }
     }
