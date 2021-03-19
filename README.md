@@ -1,4 +1,4 @@
-# Mark Downer
+# Markdown
 This is an ok markdown parser written for fun, learning and personal use.
 
 If for some reason you want to use it:
@@ -32,9 +32,6 @@ Syntax files for these languages are provided:
 * D
 * Python
 * Rust
-
-### Styling
-The custom made `.scss` file can be found in [this](https://github.com/AndrewGrim/mark_downer_style) repo.
 
 ## How To Build
 This should work on any Rust installations that support the 2018 edition.
